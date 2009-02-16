@@ -1,0 +1,60 @@
+#!/usr/bin/ruby -w
+#
+# TODO: Explain the command-line usage of this program here.
+#
+#
+# Usage:
+#
+#   ember [Options] [Source]
+#
+#
+#   Source:   URL or path to an eRuby template file.  If this parameter
+#             is not specified, then the result of reading the standard
+#             input stream (STDIN) will be used as the eRuby template.
+#
+#
+# Options:
+#
+
+require 'rubygems'
+gem 'inochi', '~> 0'
+require 'inochi'
+
+# command line
+  options = Inochi.main :Ember do
+    opt :chomp_after, 'Omit newline after directives',
+        :short => :a
+
+    opt :strip_after, 'Omit spaces and tabs after directives',
+        :short => :A
+
+    opt :chomp_before, 'Omit newline before directives',
+        :short => :b
+
+    opt :strip_before, 'Omit spaces and tabs before directives',
+        :short => :B
+
+    opt :preprocess, 'Print program and exit'
+
+    opt :unindent, 'Unindent content inside eRuby blocks hierarchically'
+  end
+
+
+# program body
+  input =
+    if source = ARGV.shift
+      options[:input_file] = source
+
+      require 'open-uri'
+      open(source) {|f| f.read }
+    else
+      STDIN.read
+    end
+
+  template = Ember::Template.new(input, options)
+
+  if options[:preprocess]
+    puts template
+  else
+    puts template.render
+  end
