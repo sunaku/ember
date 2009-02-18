@@ -1,0 +1,86 @@
+<% chapter "Introduction" do %>
+  <% project_summary do %>
+    **<%= $project %>** is an eRuby processsor that reports correct line numbers in error messages, unindents block content hierarchically, and trims whitespace around eRuby directives.
+  <% end %>
+
+  > TODO: explain why your project is important
+
+  **<%= $project %>** is exciting because:
+  * It lets you __________.
+  * Its core contains less than __________ lines of code.
+  * It __________.
+
+  > TODO: explain why your project is better than its competitors
+
+  These features distinguish **<%= $project %>** from the competition:
+  * [competitor 1](http://)
+  * [competitor 2](http://)
+  * [competitor 3](http://)
+
+  <% paragraph "Etymology" do %>
+    > TODO: explain the meaning of the name of your project
+  <% end %>
+
+  <% section "Logistics" do %>
+    * <%= xref "History", "Release notes" %> --- history of project releases.
+    * [Source code](http://github.com/sun/<%= $program %>) --- obtain via [Git](http://git.or.cz) or browse online.
+    * [API reference](api/index.html) --- documentation for source code.
+
+    To get help or provide feedback, simply
+    <%= xref "License", "contact the author(s)" %>.
+
+    <% paragraph "Version numbers" do %>
+      **<%= $project %>** releases are numbered in *major.minor.patch*
+      form according to the [RubyGems rational versioning
+      policy](http://www.rubygems.org/read/chapter/7), which
+      can be summarized thus:
+
+      <table markdown="1">
+        <thead>
+          <tr>
+            <td rowspan="2">What increased in the version number?</td>
+            <td colspan="3">The increase indicates that the release:</td>
+          </tr>
+          <tr>
+            <th>Is backward compatible?</th>
+            <th>Has new features?</th>
+            <th>Has bug fixes?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>major</th>
+            <td style="background-color: #FFE4E1;">No</td>
+            <td>Yes</td>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>minor</th>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th>patch</th>
+            <td>Yes</td>
+            <td style="background-color: #FFE4E1;">No</td>
+            <td>Yes</td>
+          </tr>
+        </tbody>
+      </table>
+    <% end %>
+  <% end %>
+
+  <% section "License" do %>
+    <%# include ../LICENSE #%>
+  <% end %>
+
+  <% section "Credits" do |n| %>
+    <%= $logo = n.xref_link("![#{$project} logo](#{$program}.png)".to_inline_xhtml) %>
+    <%# include README #%>
+
+    **<%= $project %>** is made possible by
+    <%= xref "History", "contributions" %>
+    from users like you.
+  <% end %>
+<% end %>
