@@ -119,13 +119,9 @@ module Ember
         before_content, before_newline, before_spacing,
         directive, after_spacing, after_newline = chunks.slice!(0, 6)
 
-        if directive =~ /\S/
-          operation = $&
-
-          # we keep pre_match ($`) here because we need to consider
-          # any newlines *before* the operation as part of the
-          # argument to report correct line numbers in error messages
-          arguments = $` + $'
+        if directive
+          operation = directive[0, 1]
+          arguments = directive[1..-1]
         end
 
         if before_content
