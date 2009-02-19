@@ -106,14 +106,14 @@ module Ember
         # only process the content; do not touch the directives
         # because they may contain code lines beginning with "%"
         contents.each do |content|
-          content.gsub! %r{^([ \t]*)(%.*)}, '\1<\2%>'
+          content.gsub! %r{^([[:blank:]]*)(%.*)}, '\1<\2%>'
         end
 
         template = contents.zip(directives).join
       end
 
       # compile the template into an executable Ruby program
-      chunks = template.split(/(\r?\n?)([ \t]*)<%((?:.(?!<%))*?)%>([ \t]*)(\r?\n?)/m)
+      chunks = template.split(/(\r?\n?)([[:blank:]]*)<%((?:.(?!<%))*?)%>([[:blank:]]*)(\r?\n?)/m)
 
       until chunks.empty?
         before_content, before_newline, before_spacing,
