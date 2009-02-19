@@ -91,6 +91,7 @@ module Ember
     OPERATION_COMMENT  = '#'
     OPERATION_LAMBDA   = '|'
     OPERATION_INCLUDE  = '<'
+    DIRECTIVE_INNARDS = /(?:.(?!<%))*?/
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
@@ -100,8 +101,10 @@ module Ember
 
       # convert "% at beginning of line" usage into <% normal %> usage
       if @options[:shorthand]
-        i = 0; contents, directives = # even/odd partition
-          template.split(/(<%(?:.(?!<%))*?%>)/m).partition { (i += 1) & 1 == 1 }
+        i = 0
+        contents, directives =
+          template.split(/(<%#{DIRECTIVE_INNARDS}%>)/m).
+          partition { (i += 1) & 1 == 1 } # even/odd partition
 
         # only process the content; do not touch the directives
         # because they may contain code lines beginning with "%"
@@ -113,7 +116,7 @@ module Ember
       end
 
       # compile the template into an executable Ruby program
-      chunks = template.split(/(\r?\n?)([[:blank:]]*)<%((?:.(?!<%))*?)%>([[:blank:]]*)(\r?\n?)/m)
+      chunks = template.split(/(\r?\n?)([[:blank:]]*)<%(#{DIRECTIVE_INNARDS})%>([[:blank:]]*)(\r?\n?)/m)
 
       until chunks.empty?
         before_content, before_newline, before_spacing,
