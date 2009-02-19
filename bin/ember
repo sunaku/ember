@@ -34,6 +34,8 @@ require 'inochi'
     opt :strip_before, 'Omit spaces and tabs before directives',
         :short => :B
 
+    opt :shorthand, 'Treat lines beginning with "%" as directives'
+
     opt :unindent, 'Unindent block content hierarchically'
 
     opt :preprocess, 'Print compiled template program and exit'

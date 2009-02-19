@@ -98,6 +98,21 @@ module Ember
     def compile template
       program = Program.new(@options[:result_variable] || :_erbout)
 
+      # convert "% at beginning of line" usage into <% normal %> usage
+      if @options[:shorthand]
+        i = 0; contents, directives = # even/odd partition
+          template.split(/(<%(?:.(?!<%))*?%>)/m).partition { (i += 1) & 1 == 1 }
+
+        # only process the content; do not touch the directives
+        # because they may contain code lines beginning with "%"
+        contents.each do |content|
+          content.gsub! %r{^([ \t]*)(%.*)}, '\1<\2%>'
+        end
+
+        template = contents.zip(directives).join
+      end
+
+      # compile the template into an executable Ruby program
       chunks = template.split(/(\r?\n?)([ \t]*)<%((?:.(?!<%))*?)%>([ \t]*)(\r?\n?)/m)
 
       until chunks.empty?
