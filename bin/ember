@@ -36,6 +36,8 @@ require 'inochi'
 
     opt :shorthand, 'Treat lines beginning with "%" as directives'
 
+    opt :infer_end, 'Add "end" statements based on indentation'
+
     opt :unindent, 'Unindent block content hierarchically'
 
     opt :preprocess, 'Print compiled template program and exit'
