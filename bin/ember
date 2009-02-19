@@ -34,24 +34,19 @@ require 'inochi'
     opt :strip_before, 'Omit spaces and tabs before directives',
         :short => :B
 
-    opt :preprocess, 'Print program and exit'
+    opt :unindent, 'Unindent block content hierarchically'
 
-    opt :unindent, 'Unindent content inside eRuby blocks hierarchically'
+    opt :preprocess, 'Print compiled template program and exit'
   end
 
 
 # program body
-  input =
+  template =
     if source = ARGV.shift
-      options[:input_file] = source
-
-      require 'open-uri'
-      open(source) {|f| f.read }
+      Ember::Template.open(source, options)
     else
-      STDIN.read
+      Ember::Template.new(STDIN.read, options)
     end
-
-  template = Ember::Template.new(input, options)
 
   if options[:preprocess]
     puts template

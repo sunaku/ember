@@ -1,3 +1,5 @@
+require 'open-uri'
+
 module Ember
   class Template
     ##
@@ -55,6 +57,16 @@ module Ember
     end
 
     ##
+    # Builds a template whose body is read from the given source.
+    #
+    def self.open source, options = {}
+      input = Kernel.open(source) {|f| f.read }
+      options[:input_file] = source
+
+      new input, options
+    end
+
+    ##
     # Returns the executable Ruby program that was assembled from the
     # eRuby template provided as input to the constructor of this class.
     #
@@ -74,6 +86,12 @@ module Ember
 
     private
 
+    OPERATION_ESCAPE   = '%'
+    OPERATION_EVALUATE = '='
+    OPERATION_COMMENT  = '#'
+    OPERATION_LAMBDA   = '|'
+    OPERATION_INCLUDE  = '<'
+
     ##
     # Transforms the given eRuby template into an executable Ruby program.
     #
@@ -85,6 +103,15 @@ module Ember
       until chunks.empty?
         before_content, before_newline, before_spacing,
         directive, after_spacing, after_newline = chunks.slice!(0, 6)
+
+        if directive =~ /\S/
+          operation = $&
+
+          # we keep pre_match ($`) here because we need to consider
+          # any newlines *before* the operation as part of the
+          # argument to report correct line numbers in error messages
+          arguments = $` + $'
+        end
 
         if before_content
           lines = before_content.split(/^/)
@@ -104,15 +131,26 @@ module Ember
           program.text before_spacing
         end
 
-        if directive =~ /\S/
-          operation = $&
-          arguments = $'
-
+        if operation
           case operation
-          when '%' then program.text "<%#{arguments}%>"
-          when '=' then program.expr arguments
-          when '#' then program.code directive.gsub(/\S/, ' ')
-          else          program.code directive
+          when OPERATION_ESCAPE
+            program.text "<%#{arguments}%>"
+
+          when OPERATION_EVALUATE
+            program.expr arguments
+
+          when OPERATION_COMMENT
+            program.code directive.gsub(/\S/, ' ')
+
+          when OPERATION_LAMBDA
+            arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
+            program.code "#{$`} #{$1 || 'do'} #{$2}"
+
+          when OPERATION_INCLUDE
+            program.code "::Ember::Template.open((#{arguments}), #{@options.inspect}).render(Kernel.binding)"
+
+          else
+            program.code directive
           end
         end
 
