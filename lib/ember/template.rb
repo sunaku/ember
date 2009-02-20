@@ -51,6 +51,22 @@ module Ember
     #
     #     The default value is false.
     #
+    #   [boolean] :shorthand =>
+    #     Treat lines beginning with "%" as eRuby directives.
+    #
+    #     The default value is false.
+    #
+    #   [boolean] :infer_end =>
+    #     Add missing <% end %> statements based on indentation.
+    #
+    #     The default value is false.
+    #
+    #   [boolean] :unindent =>
+    #     Unindent the content of eRuby blocks (everything
+    #     between <% do %> ...  <% end %>) hierarchically.
+    #
+    #     The default value is false.
+    #
     def initialize input, options = {}
       @options = options
       @program = compile(input.to_s)
@@ -59,9 +75,9 @@ module Ember
     ##
     # Builds a template whose body is read from the given source.
     #
-    def self.open source, options = {}
+    def self.load source, options = {}
       input = Kernel.open(source) {|f| f.read }
-      options[:input_file] = source
+      options[:input_file] ||= source
 
       new input, options
     end
@@ -89,9 +105,11 @@ module Ember
     OPERATION_ESCAPE   = '%'
     OPERATION_EVALUATE = '='
     OPERATION_COMMENT  = '#'
-    OPERATION_LAMBDA   = '|'
+    OPERATION_BLOCK    = '|'
     OPERATION_INCLUDE  = '<'
-    DIRECTIVE_INNARDS = /(?:.(?!<%))*?/
+
+    DIRECTIVE_INNARDS  = '(?:.(?!<%))*?'
+    MARGIN_REGEXP      = /^[[:blank:]]*(?=\S)/
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
@@ -109,43 +127,93 @@ module Ember
         # only process the content; do not touch the directives
         # because they may contain code lines beginning with "%"
         contents.each do |content|
-          content.gsub! %r{^([[:blank:]]*)(%.*)}, '\1<\2%>'
+          content.gsub! %r/^([[:blank:]]*)(%.*)$/, '\1<\2%>'
         end
 
         template = contents.zip(directives).join
       end
 
       # compile the template into an executable Ruby program
+      inner_margins = []
+      outer_margins = []
+
       chunks = template.split(/(\r?\n?)([[:blank:]]*)<%(#{DIRECTIVE_INNARDS})%>([[:blank:]]*)(\r?\n?)/m)
 
       until chunks.empty?
         before_content, before_newline, before_spacing,
         directive, after_spacing, after_newline = chunks.slice!(0, 6)
 
-        if directive
-          operation = directive[0, 1]
-          arguments = directive[1..-1]
+        if after_content = chunks.first # look ahead
+          after_margin = after_content[MARGIN_REGEXP]
         end
+
+        # parser actions
+          begin_block = lambda do
+            p :begin => directive if $DEBUG
+            inner_margins.push after_margin
+            outer_margins.push before_spacing
+          end
+
+          end_block = lambda do
+            p :end => directive, :mar => outer_margins if $DEBUG
+            outer_margins.pop
+            inner_margins.pop
+          end
+
+          insert_end_block = lambda do
+            program.code :end unless outer_margins.empty?
+            end_block.call
+          end
+
+          infer_end = lambda do |line|
+            if margin = line[MARGIN_REGEXP]
+              outer_margins.select {|m| m >= margin }.each do
+                p :inferring_end => line if $DEBUG
+                insert_end_block.call
+              end
+            end
+          end
+
+          unindent = lambda do |line|
+            if margin = inner_margins.last
+              line.sub! %r/^#{margin}/, ''
+            end
+          end
 
         if before_content
           lines = before_content.split(/^/)
 
           while line = lines.shift
+            infer_end.call line if @options[:infer_end]
+            unindent.call line if @options[:unindent]
+
             program.text line
-            program.line unless lines.empty?
+            program.line unless lines.empty? and line !~ /\n$/
           end
         end
 
-        if before_newline && !before_newline.empty? && !@options[:chomp_before]
-          program.text before_newline
+        if before_newline && !before_newline.empty?
+          program.text before_newline unless @options[:chomp_before]
           program.line
         end
 
-        if before_spacing && !before_spacing.empty? && !@options[:strip_before]
-          program.text before_spacing
+        ##
+        # at this point, a new line of code has begun
+        #
+
+        if @options[:infer_end] && before_spacing && directive
+          infer_end.call before_spacing + directive
         end
 
-        if operation
+        if before_spacing && !before_spacing.empty?
+          unindent.call before_spacing if @options[:unindent]
+          program.text before_spacing unless @options[:strip_before]
+        end
+
+        if directive
+          operation = directive[0, 1]
+          arguments = directive[1..-1]
+
           case operation
           when OPERATION_ESCAPE
             program.text "<%#{arguments}%>"
@@ -156,26 +224,41 @@ module Ember
           when OPERATION_COMMENT
             program.code directive.gsub(/\S/, ' ')
 
-          when OPERATION_LAMBDA
+          when OPERATION_BLOCK
             arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
             program.code "#{$`} #{$1 || 'do'} #{$2}"
 
+            begin_block.call
+
           when OPERATION_INCLUDE
-            program.code "::Ember::Template.open((#{arguments}), #{@options.inspect}).render(Kernel.binding)"
+            program.code "::Ember::Template.load((#{arguments}), #{@options.inspect}).render(Kernel.binding)"
 
           else
             program.code directive
+
+            case directive
+            when /\bdo\b\s*(\|.*?\|)?\s*\z/  # TODO: add begin|while|until ...
+              begin_block.call
+
+            when /\A\s*end\b/
+              end_block.call
+            end
           end
         end
 
-        if after_spacing && !after_spacing.empty? && !@options[:strip_after]
-          program.text after_spacing
+        if after_spacing && !after_spacing.empty?
+          program.text after_spacing unless @options[:strip_after]
         end
 
         if after_newline && !after_newline.empty?
           program.text after_newline unless @options[:chomp_after]
           program.line
         end
+      end
+
+      if @options[:infer_end]
+        p :end_of_file => outer_margins if $DEBUG
+        insert_end_block.call until outer_margins.empty?
       end
 
       program.compile

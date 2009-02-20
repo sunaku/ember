@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -w
 #
-# TODO: Explain the command-line usage of this program here.
+# Evaluates eRuby directives in the given eRuby template and
+# writes the result to the standard output stream (STDOUT).
 #
 #
 # Usage:
@@ -40,19 +41,18 @@ require 'inochi'
 
     opt :unindent, 'Unindent block content hierarchically'
 
-    opt :preprocess, 'Print compiled template program and exit'
+    opt :compile, 'Print template program and exit'
   end
-
 
 # program body
   template =
     if source = ARGV.shift
-      Ember::Template.open(source, options)
+      Ember::Template.load(source, options)
     else
       Ember::Template.new(STDIN.read, options)
     end
 
-  if options[:preprocess]
+  if options[:compile]
     puts template
   else
     puts template.render
