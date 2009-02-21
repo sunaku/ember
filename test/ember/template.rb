@@ -89,15 +89,23 @@ describe "A template" do
       must_equal("<% multi \n line \n\n directive %>")
   end
 
-  it "should preserve whitespace surrounding directives" do
+  it "should preserve content surrounding directives" do
     WHITESPACE.each_combo do |space|
-      render("#{space}<%%>").must_equal(space)
-      render("<%%>#{space}").must_equal(space)
-      render("#{space}<%%>#{space}").must_equal(space * 2)
+      test_surrounding_empty_directive "xyz"
+      test_surrounding_empty_directive space
+      test_surrounding_empty_directive "xyz#{space}"
+      test_surrounding_empty_directive "#{space}xyz"
+      test_surrounding_empty_directive "x#{space}y#{space}z"
     end
   end
 
   private
+
+  def test_surrounding_empty_directive surrounder
+    render("#{surrounder}<%%>").must_equal(surrounder)
+    render("<%%>#{surrounder}").must_equal(surrounder)
+    render("#{surrounder}<%%>#{surrounder}").must_equal(surrounder * 2)
+  end
 
   def render input, options = {}
     Ember::Template.new(input, options).render
