@@ -19,6 +19,11 @@ module Ember
     #
     #     The default value is "_erbout".
     #
+    #   [boolean] :continue_result =>
+    #     Append to the result variable if it already exists?
+    #
+    #     The default value is false.
+    #
     #   [String] :input_file =>
     #     Name of the file which contains the given input.  This
     #     is shown in stack traces when reporting error messages.
@@ -144,7 +149,9 @@ module Ember
     # Transforms the given eRuby template into an executable Ruby program.
     #
     def compile template
-      program = Program.new(@options[:result_variable] || :_erbout)
+      program = Program.new \
+        @options[:result_variable] || :_erbout,
+        @options[:continue_result]
 
       # convert "% at beginning of line" usage into <% normal %> usage
         if @options[:shorthand]
@@ -270,7 +277,7 @@ module Ember
               begin_block.call
 
             when OPERATION_INCLUDE
-              program.code "::Ember::Template.load((#{arguments}), #{@options.inspect}).render(Kernel.binding)"
+              program.code "::Ember::Template.load((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
 
             else
               program.code directive
@@ -313,16 +320,20 @@ module Ember
       # Transforms this program into Ruby code which uses
       # the given variable name as the evaluation buffer.
       #
-      def initialize result_variable
-        @var   = result_variable
-        @lines = [] # each line is composed of multiple statements
+      # If continue_result is true, the evaluation buffer is
+      # reused if it already exists in the rendering context.
+      #
+      def initialize result_variable, continue_result
+        @result_variable = result_variable
+        @continue_result = continue_result
+        @source_lines = [] # each line is composed of multiple statements
       end
 
       ##
       # Begins a new line in the program's source code.
       #
       def line
-        @lines << []
+        @source_lines << []
       end
 
       ##
@@ -358,18 +369,23 @@ module Ember
       # Transforms this program into executable Ruby source code.
       #
       def compile
-        '(%s ||= []; %s; %s.join)' % [
-          @var,
-          @lines.map {|l| l.map {|s| s.compile @var }.join('; ') }.join("\n"),
-          @var,
+        '(%s %s []; %s; %s.join)' % [
+          @result_variable,
+          @continue_result ? '||=' : '=',
+
+          @source_lines.map do |line|
+            line.map {|stmt| stmt.compile @result_variable }.join('; ')
+          end.join("\n"),
+
+          @result_variable,
         ]
       end
 
       private
 
       def insertion_point
-        line if @lines.empty?
-        @lines.last
+        line if @source_lines.empty?
+        @source_lines.last
       end
 
       def statement *args
@@ -384,7 +400,7 @@ module Ember
           when :code then value
           when :expr then "#{result_variable} << (#{value})"
           when :text then "#{result_variable} << #{value.inspect}"
-          else            raise ArgumentError, type
+          else raise ArgumentError, type
           end
         end
       end
