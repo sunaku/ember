@@ -3,6 +3,10 @@
 # Evaluates eRuby directives in the given eRuby template and
 # writes the result to the standard output stream (STDOUT).
 #
+# eRuby directives that contribute to the output of the given
+# template are called "vocal" directives.  Those that do not
+# are called "silent" directives.
+#
 #
 # Usage:
 #
@@ -23,16 +27,16 @@ require 'inochi'
 
 # command line
   options = Inochi.main :Ember do
-    opt :chomp_after, 'Omit newline after directives',
+    opt :chomp_after, 'Omit newline after all directives',
         :short => :a
 
-    opt :strip_after, 'Omit spaces and tabs after directives',
+    opt :strip_after, 'Omit spaces and tabs after silent directives',
         :short => :A
 
-    opt :chomp_before, 'Omit newline before directives',
+    opt :chomp_before, 'Omit newline before all directives',
         :short => :b
 
-    opt :strip_before, 'Omit spaces and tabs before directives',
+    opt :strip_before, 'Omit spaces and tabs before silent directives',
         :short => :B
 
     opt :shorthand, 'Treat lines beginning with "%" as directives'
@@ -53,7 +57,7 @@ require 'inochi'
     end
 
   if options[:compile]
-    puts template
+    puts template.program
   else
     puts template.render
   end

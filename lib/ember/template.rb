@@ -10,6 +10,10 @@ module Ember
     # executable Ruby program (provided by the #to_s() method)
     # which is then executed by the #render() method on demand.
     #
+    # eRuby directives that contribute to the output of
+    # the given template are called "vocal" directives.
+    # Those that do not are called "silent" directives.
+    #
     # @param [Hash] options
     #   Additional method parameters, which are all optional:
     #
@@ -42,7 +46,7 @@ module Ember
     #     The default value is false.
     #
     #   [boolean] :strip_before =>
-    #     Omit spaces and tabs before each eRuby directive?
+    #     Omit spaces and tabs before each silent eRuby directives?
     #
     #     The default value is false.
     #
@@ -52,7 +56,7 @@ module Ember
     #     The default value is false.
     #
     #   [boolean] :strip_after =>
-    #     Omit spaces and tabs after each eRuby directive?
+    #     Omit spaces and tabs after each silent eRuby directive?
     #
     #     The default value is false.
     #
@@ -103,9 +107,7 @@ module Ember
     # Returns the executable Ruby program that was assembled from the
     # eRuby template provided as input to the constructor of this class.
     #
-    def to_s
-      @program
-    end
+    attr_reader :program
 
     ##
     # Returns the result of executing the Ruby program for this template
@@ -125,8 +127,11 @@ module Ember
     OPERATION_INCLUDE  = '<'
 
     DIRECTIVE_HEAD     = '<%'
-    DIRECTIVE_BODY     = '(?:(?# there is INTENTIONALLY nothing here because we want to match the "<%%>" base case )|[^%](?:.(?!<%))*?)'
-    DIRECTIVE_TAIL     = '%>'
+    DIRECTIVE_BODY     = '(?:(?#
+                            there is nothing here, before the alternation,
+                            because we want to match the "<%%>" base case
+                          )|[^%](?:.(?!<%))*?)'
+    DIRECTIVE_TAIL     = '-?%>'
 
     NEWLINE            = '\r?\n'
     SPACING            = '[[:blank:]]*'
@@ -149,9 +154,10 @@ module Ember
     # Transforms the given eRuby template into an executable Ruby program.
     #
     def compile template
-      program = Program.new \
+      program = Program.new(
         @options[:result_variable] || :_erbout,
         @options[:continue_result]
+      )
 
       # convert "% at beginning of line" usage into <% normal %> usage
         if @options[:shorthand]
@@ -183,18 +189,19 @@ module Ember
           before_content, before_newline, before_spacing,
           directive, after_spacing, after_newline = chunks.slice!(0, 6)
 
-          if after_content = chunks.first # look ahead
-            after_margin = after_content[MARGIN_REGEXP]
-          else
-            after_margin = nil
-          end
+          after_margin =
+            if after_content = chunks.first # look ahead
+              after_content[MARGIN_REGEXP]
+            end
 
-          if directive
-            operation = directive[0, 1]
-            arguments = directive[1..-1]
-          else
-            operation = arguments = nil
-          end
+          operation, arguments =
+            if directive
+              [directive[0, 1], directive[1..-1]]
+            end
+
+          directive_is_vocal =
+            operation == OPERATION_EVALUATE ||
+            operation == OPERATION_INCLUDE
 
           # parser actions
             begin_block = lambda do
@@ -226,18 +233,29 @@ module Ember
               end
             end
 
-          if before_content
+          if before_content && !before_content.empty?
             lines = before_content.split(/^/)
 
-            while line = lines.shift
-              infer_end.call line if @options[:infer_end]
-              unindent.call line if @options[:unindent]
+            STDERR.puts before_content.inspect, lines.inspect
 
+            last_i = lines.length - 1
+            lines.each_with_index do |line, i|
               # unescape escaped directives
               line.gsub! '<%%', '<%'
 
+              # process wholesome (begins with a newline) lines only
+              if i > 0 or (i == 0 and before_content =~ /\A#{NEWLINE}/o)
+                infer_end.call line if @options[:infer_end]
+                unindent.call line if @options[:unindent]
+              end
+
+              # TODO: perhaps process everything line by line... with before newline, spacing, THE THING, spacing, newline for both content lines and directives?   that would simplify this i=0, n-1 mess
+
               program.text line
-              program.line unless lines.empty? and line !~ /\n$/
+
+              # only close the program source line if the last
+              # content line is wholesome (ends with a newline)
+              program.line unless i == last_i and line !~ /\n$/
             end
           end
 
@@ -257,7 +275,7 @@ module Ember
           if before_spacing and not before_spacing.empty?
             unindent.call before_spacing if @options[:unindent]
 
-            if operation == OPERATION_EVALUATE or not @options[:strip_before]
+            if directive_is_vocal or not @options[:strip_before]
               program.text before_spacing
             end
           end
@@ -293,7 +311,7 @@ module Ember
           end
 
           if after_spacing and not after_spacing.empty?
-            if operation == OPERATION_EVALUATE or not @options[:strip_after]
+            if directive_is_vocal or not @options[:strip_after]
               program.text after_spacing
             end
           end

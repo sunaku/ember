@@ -1,4 +1,4 @@
-require 'inochi/util/combo'
+require 'inochi/util/combinatorics'
 
 describe "Ruby program compiled from a template" do
   it "should have the same number of lines, regardless of template options" do
