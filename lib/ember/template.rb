@@ -277,7 +277,7 @@ module Ember
                   begin_block.call
 
                 when OPERATION_INCLUDE
-                  program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
+                  program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(binding)"
 
                 else
                   program.code directive

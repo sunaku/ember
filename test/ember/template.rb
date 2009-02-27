@@ -1,10 +1,100 @@
 require 'inochi/util/combinatorics'
 
-describe "Ruby program compiled from a template" do
+class Array
+  ##
+  # Invokes the given block, passing in the result
+  # of Array#join, for every possible combination.
+  #
+  def each_join
+    raise ArgumentError unless block_given?
+
+    permutations do |combo|
+      yield combo.join
+    end
+  end
+end
+
+describe "A template" do
+  it "should render single & multi-line comments as nothing" do
+    WHITESPACE.each_join do |s|
+      render("<%##{s}an#{s}eRuby#{s}comment#{s}%>").must_equal("")
+    end
+  end
+
+  it "should render directives with whitespace-only bodies as nothing" do
+    WHITESPACE.each_join do |s|
+      OPERATIONS.each do |o|
+        render("<%#{o}#{s}%>").must_equal("")
+      end
+    end
+  end
+
+  it "should render escaped directives in unescaped form" do
+    render("<%%%>").must_equal("<%%>")
+
+    render("<%% %>").must_equal("<% %>")
+
+    lambda { render("<% %%>") }.
+      must_raise(SyntaxError, "the trailing delimiter must not be unescaped")
+
+    render("<%%%%>").must_equal("<%%%>",
+      "the trailing delimiter must not be unescaped")
+
+    WHITESPACE.each_join do |s|
+      body = "#{s}an#{s}eRuby#{s}directive#{s}"
+
+      OPERATIONS.each do |o|
+        render("<%%#{o}#{body}%>").must_equal("<%#{o}#{body}%>")
+      end
+    end
+  end
+
+  it "should render whitespace surrounding vocal directives correctly" do
+    o = rand.to_s
+    i = "<%= #{o} %>"
+
+    WHITESPACE.each_join do |s|
+      (BLANK + NEWLINES).enumeration do |a, b|
+        render("a#{a}#{s}#{i}#{b}#{s}b").must_equal("a#{a}#{s}#{o}#{b}#{s}b")
+      end
+    end
+  end
+
+  it "should render whitespace surrounding silent directives correctly" do
+    i = '<%%>'
+    o = ''
+
+    SPACES.each_join do |s|
+      NEWLINES.each do |n|
+        # without preceding newline
+        render("a#{s}#{i}#{n}#{s}b").must_equal("a#{s}#{o}#{n}#{s}b")
+
+        # with preceding newline
+        render("a#{n}#{s}#{i}#{s}b").must_equal("a#{o}#{s}b",
+          "preceding newline and spacing must be removed for silent directives")
+      end
+    end
+  end
+
+  private
+
+  def render input, options = {}
+    Ember::Template.new(input, options).render
+  end
+
+  BLANK      = [''] # the empty string
+  NEWLINES   = ["\n", "\r\n"]
+  SPACES     = [' ', "\t"]
+  WHITESPACE = SPACES + NEWLINES
+  OPERATIONS = [nil, '=', '#', *WHITESPACE]
+end
+
+describe "A program compiled from a template" do
   it "should have the same number of lines, regardless of template options" do
-    test_num_lines("")
-    test_num_lines("\n")
-    test_num_lines("hello \n world")
+    (BLANK + NEWLINES).each do |s|
+      test_num_lines(s)
+      test_num_lines("hello#{s}world")
+    end
   end
 
   private
@@ -18,9 +108,9 @@ describe "Ruby program compiled from a template" do
 
     OPTIONS.each_combo do |options|
       template = Ember::Template.new(input, options)
-      program = template.to_s
+      program = template.program
 
-      count_lines(program).must_equal num_input_lines, "template compiled with #{options.inspect} has different number of lines for input #{input.inspect}"
+      count_lines(program).must_equal num_input_lines, "template program compiled with #{options.inspect} has different number of lines for input #{input.inspect}"
     end
   end
 
@@ -31,98 +121,17 @@ describe "Ruby program compiled from a template" do
     string.to_s.scan(/$/).length
   end
 
-  OPTIONS = [:chomp_before, :strip_before, :chop_after, :strip_after, :unindent]
+  OPTIONS = [:shorthand, :infer_end, :unindent]
 
   ##
-  # Invokes the given block once for every
-  # possible combination of template options.
+  # Invokes the given block, passing in an options hash
+  # for Ember::Template, for every possible combination.
   #
   def OPTIONS.each_combo
     raise ArgumentError unless block_given?
 
     combinations do |flags|
       yield Hash[ *flags.map {|f| [f, true] }.flatten ]
-    end
-  end
-end
-
-describe "A template" do
-  it "should render comments as nothing" do
-    [
-      "<%#   single line comment   %>",
-      "<%#
-                multi
-          line
-
-            comment %>",
-    ].each do |input|
-      render(input).must_equal("")
-    end
-  end
-
-  it "should render empty directives as nothing" do
-    WHITESPACE.each_combo do |space|
-      [nil, '=', '#'].each do |operation|
-        render("<%#{operation}#{space}%>").must_equal("")
-      end
-    end
-  end
-
-  it "should render escaped directives in unescaped form" do
-    render("<%%%>").must_equal("<%%>")
-
-    render("<%% %>").must_equal("<% %>")
-
-    lambda { render("<% %%>") }.
-      must_raise(SyntaxError, "the trailing delimiter must not be unescaped")
-
-    render("<%%%%>").wont_equal("<%%>",
-      "only the opening delimiter must be unescaped")
-
-    render("<%%%%>").must_equal("<%%%>",
-      "the trailing delimiter must not be unescaped")
-
-    render("<%% single line directive %>").
-      must_equal("<% single line directive %>")
-
-    render("<%% multi \n line \n\n directive %>").
-      must_equal("<% multi \n line \n\n directive %>")
-  end
-
-  it "should preserve content surrounding directives" do
-    WHITESPACE.each_combo do |space|
-      test_surrounding_empty_directive "xyz"
-      test_surrounding_empty_directive space
-      test_surrounding_empty_directive "xyz#{space}"
-      test_surrounding_empty_directive "#{space}xyz"
-      test_surrounding_empty_directive "x#{space}y#{space}z"
-    end
-  end
-
-  private
-
-  def test_surrounding_empty_directive surrounder
-    render("#{surrounder}<%%>").must_equal(surrounder)
-    render("<%%>#{surrounder}").must_equal(surrounder)
-    render("#{surrounder}<%%>#{surrounder}").must_equal(surrounder * 2)
-  end
-
-  def render input, options = {}
-    Ember::Template.new(input, options).render
-  end
-
-  WHITESPACE = [" ", "\t", "\n"]
-
-  ##
-  # Invokes the given block once for every
-  # possible combination of whitespace strings.
-  #
-  def WHITESPACE.each_combo
-    raise ArgumentError unless block_given?
-
-    permutations do |combo|
-      space = combo.join
-      yield space
     end
   end
 end
