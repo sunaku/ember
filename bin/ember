@@ -13,8 +13,8 @@
 #   ember [Options] [Source]
 #
 #
-#   Source:   URL or path to an eRuby template file.  If this parameter
-#             is not specified, then the result of reading the standard
+#   Source:   Path to an eRuby template file.  If this parameter is
+#             not specified, then the result of reading the standard
 #             input stream (STDIN) will be used as the eRuby template.
 #
 #
@@ -27,18 +27,6 @@ require 'inochi'
 
 # command line
   options = Inochi.main :Ember do
-    opt :chomp_after, 'Omit newline after all directives',
-        :short => :a
-
-    opt :strip_after, 'Omit spaces and tabs after silent directives',
-        :short => :A
-
-    opt :chomp_before, 'Omit newline before all directives',
-        :short => :b
-
-    opt :strip_before, 'Omit spaces and tabs before silent directives',
-        :short => :B
-
     opt :shorthand, 'Treat lines beginning with "%" as directives'
 
     opt :infer_end, 'Add "end" statements based on indentation'
@@ -51,7 +39,7 @@ require 'inochi'
 # program body
   template =
     if source = ARGV.shift
-      Ember::Template.load(source, options)
+      Ember::Template.load_file(source, options)
     else
       Ember::Template.new(STDIN.read, options)
     end

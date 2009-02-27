@@ -28,37 +28,17 @@ module Ember
     #
     #     The default value is false.
     #
-    #   [String] :input_file =>
+    #   [String] :source_file =>
     #     Name of the file which contains the given input.  This
     #     is shown in stack traces when reporting error messages.
     #
     #     The default value is "(input)".
     #
-    #   [Integer] :input_line =>
-    #     Line number at which the given input exists in the :input_file.
+    #   [Integer] :source_line =>
+    #     Line number at which the given input exists in the :source_file.
     #     This is shown in stack traces when reporting error messages.
     #
     #     The default value is 1.
-    #
-    #   [boolean] :chomp_before =>
-    #     Omit newline before each eRuby directive?
-    #
-    #     The default value is false.
-    #
-    #   [boolean] :strip_before =>
-    #     Omit spaces and tabs before each silent eRuby directives?
-    #
-    #     The default value is false.
-    #
-    #   [boolean] :chomp_after =>
-    #     Omit newline after each eRuby directive?
-    #
-    #     The default value is false.
-    #
-    #   [boolean] :strip_after =>
-    #     Omit spaces and tabs after each silent eRuby directive?
-    #
-    #     The default value is false.
     #
     #   [boolean] :shorthand =>
     #     Treat lines beginning with "%" as eRuby directives.
@@ -85,22 +65,19 @@ module Ember
     # Builds a template whose body is read from the given source.
     #
     # If the source is a relative path, it will be resolved
-    # relative to options[:input_file] if that is a valid path.
+    # relative to options[:source_file] if that is a valid path.
     #
-    def self.load source, options = {}
-      # resolve relative path to source file
-      unless Pathname.new(source).absolute?
-        if base = options[:input_file] and File.exist? base
+    def self.load_file path, options = {}
+      # resolve relative path to path file
+      unless Pathname.new(path).absolute?
+        if base = options[:source_file] and File.exist? base
           # target is relative to the file in
           # which the include directive exists
-          source = File.join(File.dirname(base), source)
+          path = File.join(File.dirname(base), path)
         end
       end
 
-      input = File.read(source)
-      options[:input_file] = source
-
-      new input, options
+      new File.read(path), options.merge(:source_file => path)
     end
 
     ##
@@ -115,8 +92,8 @@ module Ember
     #
     def render(context = TOPLEVEL_BINDING)
       eval @program, context,
-        @options[:input_file] || '(input)',
-        @options[:input_line] || 1
+        @options[:source_file] || '(input)',
+        @options[:source_line] || 1
     end
 
     private
@@ -137,14 +114,12 @@ module Ember
     SPACING            = '[[:blank:]]*'
 
     CHUNKS_REGEXP = /#{
-      '(%s?)(%s)%s(%s)%s(%s)(%s?)' % [
+      '(%s?)(%s)%s(%s)%s' % [
         NEWLINE,
         SPACING,
         DIRECTIVE_HEAD,
         DIRECTIVE_BODY,
         DIRECTIVE_TAIL,
-        SPACING,
-        NEWLINE,
       ]
     }/mo
 
@@ -180,26 +155,28 @@ module Ember
         end
 
       # compile the template into an executable Ruby program
-        chunks = template.split(CHUNKS_REGEXP)
-
         inner_margins = []
         outer_margins = []
 
+        chunks = template.split(CHUNKS_REGEXP)
         until chunks.empty?
-          before_content, before_newline, before_spacing,
-          directive, after_spacing, after_newline = chunks.slice!(0, 6)
+          before_content, # raw content that precedes the directive
+          before_newline, # newline before the directive
+          before_spacing, # spaces & tabs before the directive
+          directive =     # body of the directive (excluding the <% %> tags)
+            chunks.slice!(0, 4)
+
+          after_content = # raw content that follows the directive (look ahead)
+            chunks.first
 
           after_margin =
-            if after_content = chunks.first # look ahead
-              after_content[MARGIN_REGEXP]
-            end
+            if after_content then after_content[MARGIN_REGEXP] end
 
-          operation, arguments =
-            if directive
-              [directive[0, 1], directive[1..-1]]
-            end
+          operation,
+          arguments =
+            if directive then [ directive[0, 1], directive[1..-1] ] end
 
-          directive_is_vocal =
+          is_vocal_directive =
             operation == OPERATION_EVALUATE ||
             operation == OPERATION_INCLUDE
 
@@ -221,7 +198,7 @@ module Ember
 
             infer_end = lambda do |line|
               if margin = line[MARGIN_REGEXP]
-                outer_margins.select {|m| m >= margin }.each do
+                outer_margins.select {|m| margin <= m }.each do
                   emit_end.call
                 end
               end
@@ -229,58 +206,70 @@ module Ember
 
             unindent = lambda do |line|
               if margin = inner_margins.last
-                line.sub! %r/^#{margin}/, ''
+                line.sub %r/^#{margin}/, ''
+              else
+                line
               end
             end
 
           if before_content && !before_content.empty?
             lines = before_content.split(/^/)
 
-            STDERR.puts before_content.inspect, lines.inspect
-
             last_i = lines.length - 1
             lines.each_with_index do |line, i|
-              # unescape escaped directives
-              line.gsub! '<%%', '<%'
-
               # process wholesome (begins with a newline) lines only
-              if i > 0 or (i == 0 and before_content =~ /\A#{NEWLINE}/o)
+              if i > 0 || (i == 0 && before_content =~ /\A#{NEWLINE}/o)
                 infer_end.call line if @options[:infer_end]
-                unindent.call line if @options[:unindent]
+                line = unindent.call(line) if @options[:unindent]
               end
 
-              # TODO: perhaps process everything line by line... with before newline, spacing, THE THING, spacing, newline for both content lines and directives?   that would simplify this i=0, n-1 mess
+              # unescape escaped directives
+              line.gsub! '<%%', '<%'
 
               program.text line
 
               # only close the program source line if the last
               # content line is wholesome (ends with a newline)
-              program.line unless i == last_i and line !~ /\n$/
+              program.line unless i == last_i && line !~ /\n$/
             end
           end
 
-          if @options[:infer_end] and before_spacing and directive
-            infer_end.call before_spacing + directive
-          end
-
-          if before_newline and not before_newline.empty?
-            program.text before_newline unless @options[:chomp_before]
-            program.line
+          if @options[:infer_end] && before_spacing && directive
+            # '.' stands in place of the directive body,
+            # which may be empty in the case of "<%%>"
+            infer_end.call before_spacing + '.'
           end
 
           ##
-          # at this point, a new line of code has begun
+          # At this point, the raw content preceding the directive has
+          # been processed.  Now the directive itself will be processed.
           #
 
-          if before_spacing and not before_spacing.empty?
-            unindent.call before_spacing if @options[:unindent]
+          on_separate_line = before_newline && !before_newline.empty?
 
-            if directive_is_vocal or not @options[:strip_before]
-              program.text before_spacing
+          if on_separate_line
+            if is_vocal_directive
+              program.text before_newline
+            end
+
+            program.line
+          end
+
+          if before_spacing && !before_spacing.empty?
+            # XXX: do not modify before_spacing because it is
+            #      used later on in the code to infer_end !!!
+            margin = before_spacing
+
+            if on_separate_line && @options[:unindent]
+              margin = unindent.call(margin)
+            end
+
+            if is_vocal_directive || !on_separate_line
+              program.text margin
             end
           end
 
-          if operation and not operation.empty?
+          if operation && !operation.empty?
             case operation
             when OPERATION_EVALUATE
               program.expr arguments
@@ -295,7 +284,7 @@ module Ember
               begin_block.call
 
             when OPERATION_INCLUDE
-              program.code "::Ember::Template.load((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
+              program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
 
             else
               program.code directive
@@ -308,17 +297,6 @@ module Ember
                 end_block.call
               end
             end
-          end
-
-          if after_spacing and not after_spacing.empty?
-            if directive_is_vocal or not @options[:strip_after]
-              program.text after_spacing
-            end
-          end
-
-          if after_newline and not after_newline.empty?
-            program.text after_newline unless @options[:chomp_after]
-            program.line
           end
         end
 
