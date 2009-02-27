@@ -105,7 +105,7 @@ module Ember
 
     DIRECTIVE_HEAD     = '<%'
     DIRECTIVE_BODY     = '(?:(?#
-                            there is nothing here, before the alternation,
+                            there is nothing here before the alternation
                             because we want to match the "<%%>" base case
                           )|[^%](?:.(?!<%))*?)'
     DIRECTIVE_TAIL     = '-?%>'
@@ -158,69 +158,56 @@ module Ember
         inner_margins = []
         outer_margins = []
 
-        chunks = template.split(CHUNKS_REGEXP)
-        until chunks.empty?
-          before_content, # raw content that precedes the directive
-          before_newline, # newline before the directive
-          before_spacing, # spaces & tabs before the directive
-          directive =     # body of the directive (excluding the <% %> tags)
-            chunks.slice!(0, 4)
+        # parser actions
+          end_block = lambda do
+            outer_margins.pop
+            inner_margins.pop
+          end
 
-          after_content = # raw content that follows the directive (look ahead)
-            chunks.first
+          emit_end = lambda do
+            program.code :end unless outer_margins.empty?
+            end_block.call
+          end
 
-          after_margin =
-            if after_content then after_content[MARGIN_REGEXP] end
-
-          operation,
-          arguments =
-            if directive then [ directive[0, 1], directive[1..-1] ] end
-
-          is_vocal_directive =
-            operation == OPERATION_EVALUATE ||
-            operation == OPERATION_INCLUDE
-
-          # parser actions
-            begin_block = lambda do
-              inner_margins.push after_margin
-              outer_margins.push before_spacing
+          infer_end = lambda do |line|
+            if margin = line[MARGIN_REGEXP]
+              outer_margins.select {|m| margin <= m }.each do
+                emit_end.call
+              end
             end
+          end
 
-            end_block = lambda do
-              outer_margins.pop
-              inner_margins.pop
+          unindent = lambda do |line|
+            if margin = inner_margins.last
+              line.sub %r/^#{margin}/, ''
+            else
+              line
             end
+          end
 
-            emit_end = lambda do
-              program.code :end unless outer_margins.empty?
-              end_block.call
-            end
+          process_line = lambda do |content_type, before_newline, before_spacing, content, after_content|
+            have_before_newline = before_newline && !before_newline.empty?
+            on_separate_line = have_before_newline || program.empty?
+            can_infer_end = @options[:infer_end] && have_before_newline && before_spacing
 
-            infer_end = lambda do |line|
-              if margin = line[MARGIN_REGEXP]
-                outer_margins.select {|m| margin <= m }.each do
-                  emit_end.call
+            case content_type
+            when :content
+              line = "#{before_spacing}#{content}"
+
+              if can_infer_end
+                infer_end.call line
+              end
+
+              if have_before_newline
+                program.text before_newline
+              end
+
+              if on_separate_line
+                program.line
+
+                if @options[:unindent]
+                  line = unindent.call(line)
                 end
-              end
-            end
-
-            unindent = lambda do |line|
-              if margin = inner_margins.last
-                line.sub %r/^#{margin}/, ''
-              else
-                line
-              end
-            end
-
-          if before_content && !before_content.empty?
-            lines = before_content.split(/^/)
-
-            last_i = lines.length - 1
-            lines.each_with_index do |line, i|
-              # process wholesome (begins with a newline) lines only
-              if i > 0 || (i == 0 && before_content =~ /\A#{NEWLINE}/o)
-                infer_end.call line if @options[:infer_end]
-                line = unindent.call(line) if @options[:unindent]
               end
 
               # unescape escaped directives
@@ -228,86 +215,118 @@ module Ember
 
               program.text line
 
-              # only close the program source line if the last
-              # content line is wholesome (ends with a newline)
-              program.line unless i == last_i && line !~ /\n$/
-            end
-          end
+            when :directive
+              if can_infer_end
+                # '.' stands in place of the directive body,
+                # which may be empty in the case of '<%%>'
+                infer_end.call before_spacing + '.'
+              end
 
-          if @options[:infer_end] && before_spacing && directive
-            # '.' stands in place of the directive body,
-            # which may be empty in the case of "<%%>"
-            infer_end.call before_spacing + '.'
-          end
+              directive = content
+              operation = directive[0, 1]
+              arguments = directive[1..-1]
 
-          ##
-          # At this point, the raw content preceding the directive has
-          # been processed.  Now the directive itself will be processed.
-          #
+              directive_is_vocal =
+                operation == OPERATION_EVALUATE ||
+                operation == OPERATION_INCLUDE
 
-          have_before_newline = before_newline && !before_newline.empty?
-          on_separate_line = have_before_newline || program.empty?
+              if have_before_newline && directive_is_vocal
+                program.text before_newline
+              end
 
-          if have_before_newline
-            if is_vocal_directive
-              program.text before_newline
-            end
+              if on_separate_line
+                program.line
+              end
 
-            program.line
-          end
+              if before_spacing && !before_spacing.empty?
+                # XXX: do not modify before_spacing because it is
+                #      used later on in the code to infer_end !!!
+                margin = before_spacing
 
-          if before_spacing && !before_spacing.empty?
-            # XXX: do not modify before_spacing because it is
-            #      used later on in the code to infer_end !!!
-            margin = before_spacing
+                if @options[:unindent] && on_separate_line
+                  margin = unindent.call(margin)
+                end
 
-            if have_before_newline && @options[:unindent]
-              margin = unindent.call(margin)
-            end
+                if directive_is_vocal || !on_separate_line
+                  program.text margin
+                end
+              end
 
-            if is_vocal_directive || !on_separate_line
-              program.text margin
-            end
-          end
+              after_margin =
+                if after_content
+                  after_content[MARGIN_REGEXP]
+                end
 
-          if operation && !operation.empty?
-            case operation
-            when OPERATION_EVALUATE
-              program.expr arguments
+              begin_block = lambda do
+                inner_margins.push after_margin
+                outer_margins.push before_spacing
+              end
 
-            when OPERATION_COMMENT
-              program.code directive.gsub(/\S/, ' ')
+              if operation && !operation.empty?
+                case operation
+                when OPERATION_EVALUATE
+                  program.expr arguments
 
-            when OPERATION_BLOCK
-              arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
-              program.code "#{$`} #{$1 || 'do'} #{$2}"
+                when OPERATION_COMMENT
+                  program.code directive.gsub(/\S/, ' ')
 
-              begin_block.call
+                when OPERATION_BLOCK
+                  arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
+                  program.code "#{$`} #{$1 || 'do'} #{$2}"
 
-            when OPERATION_INCLUDE
-              program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
+                  begin_block.call
 
+                when OPERATION_INCLUDE
+                  program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(Kernel.binding)"
+
+                else
+                  program.code directive
+
+                  # detect block boundaries
+                  case directive
+                  when /\bdo\b\s*(\|.*?\|)?\s*\z/ # TODO: begin|while|until|...
+                    begin_block.call
+
+                  when /\A\s*end\b/
+                    end_block.call
+                  end
+                end
+
+              end
             else
-              program.code directive
+              raise ArgumentError, content_type
+            end
+          end
 
-              case directive
-              when /\bdo\b\s*(\|.*?\|)?\s*\z/  # TODO: add begin|while|until ...
-                begin_block.call
+        # parser logic
+          chunks = template.split(CHUNKS_REGEXP)
 
-              when /\A\s*end\b/
-                end_block.call
+          while true
+            # raw content before the directive
+            if before_content = chunks.shift
+              before_content.scan(/(#{NEWLINE}|\A)(#{SPACING})(.*)()/o).
+              each do |ary|
+                process_line.call :content, *ary
               end
             end
-          end
-        end
 
-        if @options[:infer_end]
-          outer_margins.length.times do
-            emit_end.call
+            break unless chunks.length >= 3
+
+            # the directive itself
+            ary = chunks.slice!(0, 3)
+            ary << chunks.first # look ahead
+
+            process_line.call :directive, *ary
           end
-        else
-          warn "There are at least #{outer_margins.length} missing '<% end %>' statements in the eRuby template." unless outer_margins.empty?
-        end
+
+        # handle leftover blocks
+          if @options[:infer_end]
+            outer_margins.length.times do
+              emit_end.call
+            end
+          else
+            warn "There are at least #{outer_margins.length} missing '<% end %>' statements in the eRuby template." unless outer_margins.empty?
+          end
 
       program.compile
     end
@@ -326,6 +345,9 @@ module Ember
         @source_lines = [] # each line is composed of multiple statements
       end
 
+      ##
+      # Returns true if there are no source lines in this program.
+      #
       def empty?
         @source_lines.empty?
       end
@@ -342,6 +364,9 @@ module Ember
       # into the evaluation buffer when this program is run.
       #
       def text value
+        # don't bother emitting empty strings
+        return if value.empty?
+
         # combine adjacent statements to reduce code size
         if prev = insertion_point.last and prev.type == :text
           prev.value << value
@@ -385,7 +410,7 @@ module Ember
       private
 
       def insertion_point
-        line if @source_lines.empty?
+        line if empty?
         @source_lines.last
       end
 
