@@ -245,9 +245,10 @@ module Ember
           # been processed.  Now the directive itself will be processed.
           #
 
-          on_separate_line = before_newline && !before_newline.empty?
+          have_before_newline = before_newline && !before_newline.empty?
+          on_separate_line = have_before_newline || program.empty?
 
-          if on_separate_line
+          if have_before_newline
             if is_vocal_directive
               program.text before_newline
             end
@@ -260,7 +261,7 @@ module Ember
             #      used later on in the code to infer_end !!!
             margin = before_spacing
 
-            if on_separate_line && @options[:unindent]
+            if have_before_newline && @options[:unindent]
               margin = unindent.call(margin)
             end
 
@@ -323,6 +324,10 @@ module Ember
         @result_variable = result_variable
         @continue_result = continue_result
         @source_lines = [] # each line is composed of multiple statements
+      end
+
+      def empty?
+        @source_lines.empty?
       end
 
       ##
