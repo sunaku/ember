@@ -32,7 +32,7 @@ module Ember
     #     Name of the file which contains the given input.  This
     #     is shown in stack traces when reporting error messages.
     #
-    #     The default value is "(input)".
+    #     The default value is "SOURCE".
     #
     #   [Integer] :source_line =>
     #     Line number at which the given input exists in the :source_file.
@@ -92,38 +92,88 @@ module Ember
     #
     def render(context = TOPLEVEL_BINDING)
       eval @program, context,
-        @options[:source_file] || '(input)',
-        @options[:source_line] || 1
+        (@options[:source_file] || :SOURCE).to_s,
+        (@options[:source_line] || 1).to_i
     end
+
 
     private
 
-    OPERATION_EVALUATE = '='
-    OPERATION_COMMENT  = '#'
-    OPERATION_BLOCK    = '|'
-    OPERATION_INCLUDE  = '<'
 
-    DIRECTIVE_HEAD     = '<%'
-    DIRECTIVE_BODY     = '(?:(?#
-                            there is nothing here before the alternation
-                            because we want to match the "<%%>" base case
-                          )|[^%](?:.(?!<%))*?)'
-    DIRECTIVE_TAIL     = '-?%>'
+    OPERATION_EVALUATE      = '='
+    OPERATION_COMMENT       = '#'
+    OPERATION_LAMBDA        = '|'
+    OPERATION_INCLUDE       = '<'
+    OPERATION_TEMPLATE      = '^'
 
-    NEWLINE            = '\r?\n'
-    SPACING            = '[[:blank:]]*'
+    VOCAL_OPERATIONS        = [
+                                OPERATION_EVALUATE,
+                                OPERATION_INCLUDE,
+                                OPERATION_TEMPLATE,
+                              ]
 
-    CHUNKS_REGEXP = /#{
-      '(%s?)(%s)%s(%s)%s' % [
-        NEWLINE,
-        SPACING,
-        DIRECTIVE_HEAD,
-        DIRECTIVE_BODY,
-        DIRECTIVE_TAIL,
-      ]
-    }/mo
+    DIRECTIVE_HEAD          = '<%'
+    DIRECTIVE_BODY          = '(?:(?#
+                                there is nothing here before the alternation
+                                because we want to match the "<%%>" base case
+                              )|[^%](?:.(?!<%))*?)'
+    DIRECTIVE_TAIL          = '-?%>'
 
-    MARGIN_REGEXP = /^#{SPACING}(?=\S)/o
+    NEWLINE                 = '\r?\n'
+    SPACING                 = '[[:blank:]]*'
+
+    CHUNKS_REGEXP           = /#{
+                                '(%s?)(%s)%s(%s)%s' % [
+                                  NEWLINE,
+                                  SPACING,
+                                  DIRECTIVE_HEAD,
+                                  DIRECTIVE_BODY,
+                                  DIRECTIVE_TAIL,
+                                ]
+                              }/mo
+
+    MARGIN_REGEXP           = /^#{SPACING}(?=\S)/o
+
+    LAMBDA_BEGIN_REGEXP     = /\b(do)\b\s*(\|.*?\|)?\s*$/
+
+    block_begin_keywords    = [
+                                # generic
+                                :begin,
+
+                                # conditional
+                                :if,
+                                :unless,
+                                :case,
+
+                                # loops
+                                :for,
+                                :while,
+                                :until
+                              ]
+
+    block_continue_keywords = [
+                                # generic
+                                :rescue,
+                                :ensure,
+
+                                # conditional
+                                :else,
+                                :elsif,
+                                :when
+                              ]
+
+    block_end_keywords      = [
+                                # generic
+                                :end
+                              ]
+
+    keyword_regexp_builder  = lambda do |keywords|
+                                /^\s*\b(#{keywords.join '|'})\b/
+                              end
+
+    BLOCK_BEGIN_REGEXP      = keyword_regexp_builder[block_begin_keywords]
+    BLOCK_CONTINUE_REGEXP   = keyword_regexp_builder[block_continue_keywords]
+    BLOCK_END_REGEXP        = keyword_regexp_builder[block_end_keywords]
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
@@ -155,37 +205,54 @@ module Ember
         end
 
       # compile the template into an executable Ruby program
-        inner_margins = []
-        outer_margins = []
+        margins = []
 
         # parser actions
           end_block = lambda do
-            outer_margins.pop
-            inner_margins.pop
+            raise 'attempt to close unopened block' if margins.empty?
+            STDERR.puts "end block => YES"
+            margins.pop
           end
 
           emit_end = lambda do
-            program.code :end unless outer_margins.empty?
-            end_block.call
+            STDERR.puts "emit end => YES"
+            program.code :end
           end
 
-          infer_end = lambda do |line|
-            if margin = line[MARGIN_REGEXP]
-              outer_margins.select {|m| margin <= m }.each do
-                emit_end.call
+          infer_end = lambda do |line, skip_last_level|
+            STDERR.puts "inferring end for line=#{line.inspect}"
+            STDERR.puts "inferring end on margins=#{margins.inspect}"
+
+            if current = line[MARGIN_REGEXP]
+              # determine the number of levels to descend
+              levels = margins.select {|previous| current < previous }.length
+
+              if levels > 0
+                # in the case of block-continuation
+                # directives, we must not descend
+                # the very last (outmost) level
+                # here.  it will be done later on
+                limit = skip_last_level ? levels - 1 : levels
+
+                limit.times do
+                  end_block.call
+                  emit_end.call
+                  STDERR.puts "infer end => YES, new margins=#{margins.inspect}"
+                end
               end
             end
           end
 
           unindent = lambda do |line|
-            if margin = inner_margins.last
+            STDERR.puts ">>> unindenting #{line.inspect} for margins: #{margins.inspect}"
+            if margin = margins.last
               line.sub %r/^#{margin}/, ''
             else
               line
             end
           end
 
-          process_line = lambda do |content_type, before_newline, before_spacing, content, after_content|
+          process_line = lambda do |content_type, before_newline, before_spacing, content, after_margin|
             have_before_newline = before_newline && !before_newline.empty?
             on_separate_line = have_before_newline || program.empty?
             can_infer_end = @options[:infer_end] && have_before_newline && before_spacing
@@ -195,7 +262,7 @@ module Ember
               line = "#{before_spacing}#{content}"
 
               if can_infer_end
-                infer_end.call line
+                infer_end.call line, false
               end
 
               if have_before_newline
@@ -206,7 +273,9 @@ module Ember
                 program.line
 
                 if @options[:unindent]
+                  STDERR.puts ">>> before unindent=#{line.inspect}"
                   line = unindent.call(line)
+                  STDERR.puts ">>> after unindent=#{line.inspect}"
                 end
               end
 
@@ -216,21 +285,51 @@ module Ember
               program.text line
 
             when :directive
-              if can_infer_end
-                # '.' stands in place of the directive body,
-                # which may be empty in the case of '<%%>'
-                infer_end.call before_spacing + '.'
-              end
-
               directive = content
               operation = directive[0, 1]
               arguments = directive[1..-1]
 
-              directive_is_vocal =
-                operation == OPERATION_EVALUATE ||
-                operation == OPERATION_INCLUDE
+              is_vocal_directive = VOCAL_OPERATIONS.include? operation
+              is_single_line_directive = directive.count("\n").zero?
 
-              if have_before_newline && directive_is_vocal
+              # detect block boundaries
+                begin_block = lambda do
+                  margins.push after_margin
+                  STDERR.puts "begin block => YES, margins=#{margins.inspect}"
+                end
+
+                if can_infer_end &&
+                (
+                   is_vocal_directive || is_single_line_directive
+                )
+                then
+                  # STDERR.puts "infer end on directive:  #{directive.inspect}  before NL=#{have_before_newline}"
+
+                  # '.' stands in place of the directive body,
+                  # which may be empty in the case of '<%%>'
+                  infer_end.call before_spacing + '.',
+                                 arguments =~ BLOCK_END_REGEXP ||
+                                 arguments =~ BLOCK_CONTINUE_REGEXP
+                end
+
+                if is_single_line_directive
+                  case directive
+                  when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
+                    STDERR.puts "begin block on directive:  #{directive.inspect}"
+                    begin_block.call
+
+                  when BLOCK_CONTINUE_REGEXP
+                    STDERR.puts "SWITCH block on directive:  #{directive.inspect}"
+                    end_block.call
+                    begin_block.call
+
+                  when BLOCK_END_REGEXP
+                    STDERR.puts "end block on directive:  #{directive.inspect}"
+                    end_block.call
+                  end
+                end
+
+              if have_before_newline && is_vocal_directive
                 program.text before_newline
               end
 
@@ -244,22 +343,18 @@ module Ember
                 margin = before_spacing
 
                 if @options[:unindent] && on_separate_line
+                  STDERR.puts ">>> before unindent=#{margin.inspect}"
                   margin = unindent.call(margin)
+                  STDERR.puts ">>> after unindent=#{margin.inspect}"
                 end
 
-                if directive_is_vocal || !on_separate_line
+                if is_vocal_directive || !on_separate_line
                   program.text margin
                 end
               end
 
-              after_margin =
-                if after_content
-                  after_content[MARGIN_REGEXP]
-                end
-
-              begin_block = lambda do
-                inner_margins.push after_margin
-                outer_margins.push before_spacing
+              handle_template = lambda do |meth|
+                program.code "::Ember::Template.#{meth}((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(binding)"
               end
 
               if operation && !operation.empty?
@@ -270,26 +365,20 @@ module Ember
                 when OPERATION_COMMENT
                   program.code directive.gsub(/\S/, ' ')
 
-                when OPERATION_BLOCK
+                when OPERATION_LAMBDA
                   arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
                   program.code "#{$`} #{$1 || 'do'} #{$2}"
 
                   begin_block.call
 
+                when OPERATION_TEMPLATE
+                  handle_template.call :new
+
                 when OPERATION_INCLUDE
-                  program.code "::Ember::Template.load_file((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(binding)"
+                  handle_template.call :load_file
 
                 else
                   program.code directive
-
-                  # detect block boundaries
-                  case directive
-                  when /\bdo\b\s*(\|.*?\|)?\s*\z/ # TODO: begin|while|until|...
-                    begin_block.call
-
-                  when /\A\s*end\b/
-                    end_block.call
-                  end
                 end
 
               end
@@ -304,28 +393,37 @@ module Ember
           while true
             # raw content before the directive
             if before_content = chunks.shift
-              before_content.scan(/(#{NEWLINE}|\A)(#{SPACING})(.*)()/o).
-              each do |ary|
-                process_line.call :content, *ary
+              lines = before_content.scan(/(#{NEWLINE}|\A)(#{SPACING})(.*)()/o)
+
+              lines.each do |matches|
+                STDERR.puts '', '', '', :content, matches.inspect
+                process_line.call :content, *matches
               end
             end
 
             break unless chunks.length >= 3
 
             # the directive itself
-            ary = chunks.slice!(0, 3)
-            ary << chunks.first # look ahead
+            args = chunks.slice!(0, 3)
 
-            process_line.call :directive, *ary
+            after_content = chunks.first(3).join + '.' # look ahead
+            after_margin = after_content[MARGIN_REGEXP]
+            args << after_margin
+
+            STDERR.puts '', '', '', :directive, args.inspect
+            # STDERR.puts "<<< after_content: #{after_content.inspect}"
+            # STDERR.puts "<<< after_margin: #{after_margin.inspect}"
+
+            process_line.call :directive, *args
           end
 
         # handle leftover blocks
           if @options[:infer_end]
-            outer_margins.length.times do
+            margins.each do
               emit_end.call
             end
           else
-            warn "There are at least #{outer_margins.length} missing '<% end %>' statements in the eRuby template." unless outer_margins.empty?
+            warn "There are at least #{margins.length} missing '<% end %>' statements in the eRuby template." unless margins.empty?
           end
 
       program.compile
