@@ -103,8 +103,8 @@ module Ember
     OPERATION_EVALUATE      = '='
     OPERATION_COMMENT       = '#'
     OPERATION_LAMBDA        = '|'
-    OPERATION_INCLUDE       = '<'
-    OPERATION_TEMPLATE      = '^'
+    OPERATION_INCLUDE       = '+'
+    OPERATION_TEMPLATE      = '*'
 
     VOCAL_OPERATIONS        = [
                                 OPERATION_EVALUATE,
@@ -292,43 +292,15 @@ module Ember
               is_vocal_directive = VOCAL_OPERATIONS.include? operation
               is_single_line_directive = directive.count("\n").zero?
 
-              # detect block boundaries
-                begin_block = lambda do
-                  margins.push after_margin
-                  STDERR.puts "begin block => YES, margins=#{margins.inspect}"
-                end
+              if can_infer_end && (is_vocal_directive || is_single_line_directive)
+                # '.' stands in place of the directive body,
+                # which may be empty in the case of '<%%>'
+                infer_end.call before_spacing + '.',
+                               arguments =~ BLOCK_END_REGEXP ||
+                               arguments =~ BLOCK_CONTINUE_REGEXP
+              end
 
-                if can_infer_end &&
-                (
-                   is_vocal_directive || is_single_line_directive
-                )
-                then
-                  # STDERR.puts "infer end on directive:  #{directive.inspect}  before NL=#{have_before_newline}"
-
-                  # '.' stands in place of the directive body,
-                  # which may be empty in the case of '<%%>'
-                  infer_end.call before_spacing + '.',
-                                 arguments =~ BLOCK_END_REGEXP ||
-                                 arguments =~ BLOCK_CONTINUE_REGEXP
-                end
-
-                if is_single_line_directive
-                  case directive
-                  when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
-                    STDERR.puts "begin block on directive:  #{directive.inspect}"
-                    begin_block.call
-
-                  when BLOCK_CONTINUE_REGEXP
-                    STDERR.puts "SWITCH block on directive:  #{directive.inspect}"
-                    end_block.call
-                    begin_block.call
-
-                  when BLOCK_END_REGEXP
-                    STDERR.puts "end block on directive:  #{directive.inspect}"
-                    end_block.call
-                  end
-                end
-
+              # omit before_newline for silent directives
               if have_before_newline && is_vocal_directive
                 program.text before_newline
               end
@@ -342,18 +314,24 @@ module Ember
                 #      used later on in the code to infer_end !!!
                 margin = before_spacing
 
-                if @options[:unindent] && on_separate_line
+                if on_separate_line && @options[:unindent]
                   STDERR.puts ">>> before unindent=#{margin.inspect}"
                   margin = unindent.call(margin)
                   STDERR.puts ">>> after unindent=#{margin.inspect}"
                 end
 
-                if is_vocal_directive || !on_separate_line
+                # omit before_spacing for silent directives
+                if !on_separate_line || is_vocal_directive
                   program.text margin
                 end
               end
 
-              handle_template = lambda do |meth|
+              begin_block = lambda do
+                margins.push after_margin
+                STDERR.puts "begin block => YES, margins=#{margins.inspect}"
+              end
+
+              handle_nested_template = lambda do |meth|
                 program.code "::Ember::Template.#{meth}((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(binding)"
               end
 
@@ -372,13 +350,30 @@ module Ember
                   begin_block.call
 
                 when OPERATION_TEMPLATE
-                  handle_template.call :new
+                  handle_nested_template.call :new
 
                 when OPERATION_INCLUDE
-                  handle_template.call :load_file
+                  handle_nested_template.call :load_file
 
                 else
                   program.code directive
+
+                  if is_single_line_directive
+                    case directive
+                    when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
+                      STDERR.puts "begin block on directive:  #{directive.inspect}"
+                      begin_block.call
+
+                    when BLOCK_CONTINUE_REGEXP
+                      STDERR.puts "SWITCH block on directive:  #{directive.inspect}"
+                      end_block.call
+                      begin_block.call
+
+                    when BLOCK_END_REGEXP
+                      STDERR.puts "end block on directive:  #{directive.inspect}"
+                      end_block.call
+                    end
+                  end
                 end
 
               end
@@ -406,6 +401,8 @@ module Ember
             # the directive itself
             args = chunks.slice!(0, 3)
 
+            # '.' stands in place of the directive body,
+            # which may be empty in the case of '<%%>'
             after_content = chunks.first(3).join + '.' # look ahead
             after_margin = after_content[MARGIN_REGEXP]
             args << after_margin
