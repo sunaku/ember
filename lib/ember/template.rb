@@ -206,12 +206,14 @@ module Ember
 
       # compile the template into an executable Ruby program
         margins = []
+        crowns = []
 
         # parser actions
           end_block = lambda do
             raise 'attempt to close unopened block' if margins.empty?
             STDERR.puts "end block => YES"
             margins.pop
+            crowns.pop
           end
 
           emit_end = lambda do
@@ -224,29 +226,26 @@ module Ember
             STDERR.puts "inferring end on margins=#{margins.inspect}"
 
             if current = line[MARGIN_REGEXP]
-              # determine the number of levels to descend
-              levels = margins.select {|previous| current < previous }.length
+              # determine the number of levels to ascend
+              levels = margins.select {|previous| current < previous }
 
-              if levels > 0
-                # in the case of block-continuation
-                # directives, we must not descend
-                # the very last (outmost) level
-                # here.  it will be done later on
-                limit = skip_last_level ? levels - 1 : levels
+              # in the case of block-continuation and -ending directives,
+              # we must not ascend the very last (outmost) level at this
+              # point of the algorithm.  that work will be done later on
+              levels.pop if skip_last_level
 
-                limit.times do
-                  end_block.call
-                  emit_end.call
-                  STDERR.puts "infer end => YES, new margins=#{margins.inspect}"
-                end
+              levels.each do
+                end_block.call
+                emit_end.call
+                STDERR.puts "infer end => YES, new margins=#{margins.inspect}"
               end
             end
           end
 
           unindent = lambda do |line|
             STDERR.puts ">>> unindenting #{line.inspect} for margins: #{margins.inspect}"
-            if margin = margins.last
-              line.sub %r/^#{margin}/, ''
+            if margin = margins.last and crown = crowns.first
+              line.sub(/^#{margin}/, crown)
             else
               line
             end
@@ -327,7 +326,8 @@ module Ember
               end
 
               begin_block = lambda do
-                margins.push after_margin
+                margins << after_margin
+                crowns  << before_spacing
                 STDERR.puts "begin block => YES, margins=#{margins.inspect}"
               end
 
