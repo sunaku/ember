@@ -105,6 +105,7 @@ module Ember
     OPERATION_LAMBDA        = '|'
     OPERATION_INCLUDE       = '+'
     OPERATION_TEMPLATE      = '*'
+    OPERATION_INSERT        = '^'
 
     VOCAL_OPERATIONS        = [
                                 OPERATION_EVALUATE,
@@ -289,8 +290,9 @@ module Ember
               arguments = directive[1..-1]
 
               is_vocal_directive = VOCAL_OPERATIONS.include? operation
-              is_single_line_directive = directive.count("\n").zero?
+              is_single_line_directive = directive !~ /\n/
 
+              # don't bother parsing multi-line code directives
               if can_infer_end && (is_vocal_directive || is_single_line_directive)
                 # '.' stands in place of the directive body,
                 # which may be empty in the case of '<%%>'
@@ -354,6 +356,9 @@ module Ember
 
                 when OPERATION_INCLUDE
                   handle_nested_template.call :load_file
+
+                when OPERATION_INSERT
+                  program.code "::File.read(#{arguments})"
 
                 else
                   program.code directive
