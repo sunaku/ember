@@ -196,7 +196,7 @@ module Ember
           # because they may contain code lines beginning with "%"
           contents.each do |content|
             # process unescaped directives
-            content.gsub! %r/^(#{SPACING})(%[^%].*)$/o, '\1<\2%>'
+            content.gsub! %r/^(#{SPACING})(%$|%[^%].*$)/o, '\1<\2%>'
 
             # unescape escaped directives
             content.gsub! %r/^(#{SPACING})(%)%/o, '\1\2'
