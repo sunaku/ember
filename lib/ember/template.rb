@@ -3,6 +3,12 @@ require 'pathname'
 module Ember
   class Template
     ##
+    # Returns the executable Ruby program that was assembled from the
+    # eRuby template provided as input to the constructor of this class.
+    #
+    attr_reader :program
+
+    ##
     # Builds a processor that evaluates eRuby directives
     # in the given input according to the given options.
     #
@@ -62,31 +68,6 @@ module Ember
     end
 
     ##
-    # Builds a template whose body is read from the given source.
-    #
-    # If the source is a relative path, it will be resolved
-    # relative to options[:source_file] if that is a valid path.
-    #
-    def self.load_file path, options = {}
-      # resolve relative path to path file
-      unless Pathname.new(path).absolute?
-        if base = options[:source_file] and File.exist? base
-          # target is relative to the file in
-          # which the include directive exists
-          path = File.join(File.dirname(base), path)
-        end
-      end
-
-      new File.read(path), options.merge(:source_file => path)
-    end
-
-    ##
-    # Returns the executable Ruby program that was assembled from the
-    # eRuby template provided as input to the constructor of this class.
-    #
-    attr_reader :program
-
-    ##
     # Returns the result of executing the Ruby program for this template
     # (provided by the #to_s() method) inside the given context binding.
     #
@@ -96,16 +77,46 @@ module Ember
         (@options[:source_line] || 1).to_i
     end
 
+    class << self
+      ##
+      # Builds a template whose body is read from the given source.
+      #
+      # If the source is a relative path, it will be resolved
+      # relative to options[:source_file] if that is a valid path.
+      #
+      def load_file path, options = {}
+        path = resolve_path(path, options)
+        new File.read(path), options.merge(:source_file => path)
+      end
+
+      def read_file path, options = {}
+        File.read resolve_path(path, options)
+      end
+
+      private
+
+      def resolve_path path, options = {}
+        unless Pathname.new(path).absolute?
+          if base = options[:source_file] and File.exist? base
+            # target is relative to the file in
+            # which the include directive exists
+            path = File.join(File.dirname(base), path)
+          end
+        end
+
+        path
+      end
+    end
+
 
     private
-
 
     OPERATION_EVALUATE      = '='
     OPERATION_COMMENT       = '#'
     OPERATION_LAMBDA        = '|'
     OPERATION_INCLUDE       = '+'
     OPERATION_TEMPLATE      = '*'
-    OPERATION_INSERT        = '^'
+    OPERATION_INSERT        = '<'
 
     VOCAL_OPERATIONS        = [
                                 OPERATION_EVALUATE,
@@ -120,18 +131,15 @@ module Ember
                               )|[^%](?:.(?!<%))*?)'
     DIRECTIVE_TAIL          = '-?%>'
 
+    SHORTHAND_HEAD          = '%'
+    SHORTHAND_BODY          = '(?:(?#
+                                there is nothing here before the alternation
+                                because we want to match the "<%%>" base case
+                              )|[^%].*)'
+    SHORTHAND_TAIL          = '$'
+
     NEWLINE                 = '\r?\n'
     SPACING                 = '[[:blank:]]*'
-
-    CHUNKS_REGEXP           = /#{
-                                '(%s?)(%s)%s(%s)%s' % [
-                                  NEWLINE,
-                                  SPACING,
-                                  DIRECTIVE_HEAD,
-                                  DIRECTIVE_BODY,
-                                  DIRECTIVE_TAIL,
-                                ]
-                              }/mo
 
     MARGIN_REGEXP           = /^#{SPACING}(?=\S)/o
 
@@ -196,36 +204,31 @@ module Ember
           # because they may contain code lines beginning with "%"
           contents.each do |content|
             # process unescaped directives
-            content.gsub! %r/^(#{SPACING})(%$|%[^%].*$)/o, '\1<\2%>'
+            content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD}#{SHORTHAND_BODY})#{SHORTHAND_TAIL}/o, '\1<\2%>'
 
             # unescape escaped directives
-            content.gsub! %r/^(#{SPACING})(%)%/o, '\1\2'
+            content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD})#{SHORTHAND_HEAD}/o, '\1\2'
           end
 
           template = contents.zip(directives).join
         end
 
-      # compile the template into an executable Ruby program
+      # build program from template
         margins = []
         crowns = []
 
         # parser actions
           end_block = lambda do
-            raise 'attempt to close unopened block' if margins.empty?
-            STDERR.puts "end block => YES"
+            raise 'cannot close unopened block' if margins.empty?
             margins.pop
             crowns.pop
           end
 
           emit_end = lambda do
-            STDERR.puts "emit end => YES"
             program.code :end
           end
 
           infer_end = lambda do |line, skip_last_level|
-            STDERR.puts "inferring end for line=#{line.inspect}"
-            STDERR.puts "inferring end on margins=#{margins.inspect}"
-
             if current = line[MARGIN_REGEXP]
               # determine the number of levels to ascend
               levels = margins.select {|previous| current < previous }
@@ -238,13 +241,11 @@ module Ember
               levels.each do
                 end_block.call
                 emit_end.call
-                STDERR.puts "infer end => YES, new margins=#{margins.inspect}"
               end
             end
           end
 
           unindent = lambda do |line|
-            STDERR.puts ">>> unindenting #{line.inspect} for margins: #{margins.inspect}"
             if margin = margins.last and crown = crowns.first
               line.sub(/^#{margin}/, crown)
             else
@@ -253,9 +254,16 @@ module Ember
           end
 
           process_line = lambda do |content_type, before_newline, before_spacing, content, after_margin|
-            have_before_newline = before_newline && !before_newline.empty?
-            on_separate_line = have_before_newline || program.empty?
-            can_infer_end = @options[:infer_end] && have_before_newline && before_spacing
+
+            have_before_newline = before_newline &&
+                                  !before_newline.empty?
+
+            on_separate_line    = have_before_newline ||
+                                  program.empty?
+
+            can_infer_end       = @options[:infer_end] &&
+                                  have_before_newline &&
+                                  before_spacing
 
             case content_type
             when :content
@@ -273,9 +281,7 @@ module Ember
                 program.line
 
                 if @options[:unindent]
-                  STDERR.puts ">>> before unindent=#{line.inspect}"
                   line = unindent.call(line)
-                  STDERR.puts ">>> after unindent=#{line.inspect}"
                 end
               end
 
@@ -316,9 +322,7 @@ module Ember
                 margin = before_spacing
 
                 if on_separate_line && @options[:unindent]
-                  STDERR.puts ">>> before unindent=#{margin.inspect}"
                   margin = unindent.call(margin)
-                  STDERR.puts ">>> after unindent=#{margin.inspect}"
                 end
 
                 # omit before_spacing for silent directives
@@ -330,11 +334,13 @@ module Ember
               begin_block = lambda do
                 margins << after_margin
                 crowns  << before_spacing
-                STDERR.puts "begin block => YES, margins=#{margins.inspect}"
               end
 
+              template_class_name  = '::Ember::Template'
+              nested_template_args = "(#{arguments}), #{@options.inspect}"
+
               handle_nested_template = lambda do |meth|
-                program.code "::Ember::Template.#{meth}((#{arguments}), #{@options.inspect}.merge!(:continue_result => true)).render(binding)"
+                program.code "#{template_class_name}.#{meth}(#{nested_template_args}.merge!(:continue_result => true)).render(binding)"
               end
 
               if operation && !operation.empty?
@@ -358,7 +364,7 @@ module Ember
                   handle_nested_template.call :load_file
 
                 when OPERATION_INSERT
-                  program.code "::File.read(#{arguments})"
+                  program.expr "#{template_class_name}.read_file(#{nested_template_args})"
 
                 else
                   program.code directive
@@ -366,16 +372,13 @@ module Ember
                   if is_single_line_directive
                     case directive
                     when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
-                      STDERR.puts "begin block on directive:  #{directive.inspect}"
                       begin_block.call
 
                     when BLOCK_CONTINUE_REGEXP
-                      STDERR.puts "SWITCH block on directive:  #{directive.inspect}"
                       end_block.call
                       begin_block.call
 
                     when BLOCK_END_REGEXP
-                      STDERR.puts "end block on directive:  #{directive.inspect}"
                       end_block.call
                     end
                   end
@@ -388,7 +391,15 @@ module Ember
           end
 
         # parser logic
-          chunks = template.split(CHUNKS_REGEXP)
+          chunks = template.split(/#{
+            '(%s?)(%s)%s(%s)%s' % [
+              NEWLINE,
+              SPACING,
+              DIRECTIVE_HEAD,
+              DIRECTIVE_BODY,
+              DIRECTIVE_TAIL,
+            ]
+          }/mo)
 
           while true
             # raw content before the directive
@@ -396,7 +407,6 @@ module Ember
               lines = before_content.scan(/(#{NEWLINE}|\A)(#{SPACING})(.*)()/o)
 
               lines.each do |matches|
-                STDERR.puts '', '', '', :content, matches.inspect
                 process_line.call :content, *matches
               end
             end
@@ -410,16 +420,13 @@ module Ember
             # which may be empty in the case of '<%%>'
             after_content = chunks.first(3).join + '.' # look ahead
             after_margin = after_content[MARGIN_REGEXP]
-            args << after_margin
 
-            STDERR.puts '', '', '', :directive, args.inspect
-            # STDERR.puts "<<< after_content: #{after_content.inspect}"
-            # STDERR.puts "<<< after_margin: #{after_margin.inspect}"
+            args << after_margin
 
             process_line.call :directive, *args
           end
 
-        # handle leftover blocks
+        # missing ends
           if @options[:infer_end]
             margins.each do
               emit_end.call
