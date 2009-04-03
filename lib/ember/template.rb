@@ -506,8 +506,38 @@ module Ember
           @result_variable,
           @continue_result ? '||=' : '=',
 
-          @source_lines.map do |line|
-            line.map {|stmt| stmt.compile @result_variable }.join('; ')
+          @source_lines.map do |source_line|
+            compiled_line = []
+            combine_prev = false
+
+            source_line.each do |stmt|
+              case stmt.type
+              when :code
+                compiled_line << stmt.value
+                combine_prev = false
+
+              when :expr, :text
+                code =
+                  case stmt.type
+                  when :expr then " << (#{stmt.value})"
+                  when :text then " << #{stmt.value.inspect}"
+                  end
+
+                if combine_prev
+                  compiled_line.last << code
+                else
+                  compiled_line << @result_variable.to_s + code
+                end
+
+                combine_prev = true
+
+              else
+                raise NotImplementedError, type
+              end
+            end
+
+            compiled_line.join('; ')
+
           end.join("\n"),
 
           @result_variable,
@@ -526,17 +556,6 @@ module Ember
       end
 
       Statement = Struct.new :type, :value
-
-      class Statement
-        def compile result_variable
-          case type
-          when :code then value
-          when :expr then "#{result_variable} << (#{value})"
-          when :text then "#{result_variable} << #{value.inspect}"
-          else raise ArgumentError, type
-          end
-        end
-      end
     end
   end
 end
