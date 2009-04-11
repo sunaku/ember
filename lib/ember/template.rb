@@ -89,6 +89,13 @@ module Ember
         new File.read(path), options.merge(:source_file => path)
       end
 
+      ##
+      # Returns the contents of the given file, which can be relative to
+      # the current template in which this command is being executed.
+      #
+      # If the source is a relative path, it will be resolved
+      # relative to options[:source_file] if that is a valid path.
+      #
       def read_file path, options = {}
         File.read resolve_path(path, options)
       end
@@ -111,78 +118,67 @@ module Ember
 
     private
 
-    OPERATION_EVALUATE      = '='
-    OPERATION_COMMENT       = '#'
-    OPERATION_LAMBDA        = '|'
-    OPERATION_INCLUDE       = '+'
-    OPERATION_TEMPLATE      = '*'
-    OPERATION_INSERT        = '<'
+    OPERATIONS            = [
+                              OPERATION_EVAL_EXPRESSION      = '=',
+                              OPERATION_CODE_COMMENT         = '#',
+                              OPERATION_BEGIN_LAMBDA         = '|',
+                              OPERATION_EVAL_TEMPLATE_FILE   = '+',
+                              OPERATION_EVAL_TEMPLATE_STRING = '*',
+                              OPERATION_INSERT_PLAIN_FILE    = '<',
+                            ]
 
-    VOCAL_OPERATIONS        = [
-                                OPERATION_EVALUATE,
-                                OPERATION_INCLUDE,
-                                OPERATION_TEMPLATE,
-                              ]
+    VOCAL_OPERATIONS      = [
+                              OPERATION_EVAL_EXPRESSION,
+                              OPERATION_EVAL_TEMPLATE_FILE,
+                              OPERATION_EVAL_TEMPLATE_STRING,
+                            ]
 
-    DIRECTIVE_HEAD          = '<%'
-    DIRECTIVE_BODY          = '(?:(?#
+    DIRECTIVE_HEAD        = '<%'
+    DIRECTIVE_BODY        = '(?:(?#
                                 there is nothing here before the alternation
                                 because we want to match the "<%%>" base case
                               )|[^%](?:.(?!<%))*?)'
-    DIRECTIVE_TAIL          = '-?%>'
+    DIRECTIVE_TAIL        = '-?%>'
 
-    SHORTHAND_HEAD          = '%'
-    SHORTHAND_BODY          = '(?:(?#
+    SHORTHAND_HEAD        = '%'
+    SHORTHAND_BODY        = '(?:(?#
                                 there is nothing here before the alternation
                                 because we want to match the "<%%>" base case
                               )|[^%].*)'
-    SHORTHAND_TAIL          = '$'
+    SHORTHAND_TAIL        = '$'
 
-    NEWLINE                 = '\r?\n'
-    SPACING                 = '[[:blank:]]*'
+    NEWLINE               = '\r?\n'
+    SPACING               = '[[:blank:]]*'
 
-    MARGIN_REGEXP           = /^#{SPACING}(?=\S)/o
+    MARGIN_REGEXP         = /^#{SPACING}(?=\S)/o
 
-    LAMBDA_BEGIN_REGEXP     = /\b(do)\b\s*(\|.*?\|)?\s*$/
+    LAMBDA_BEGIN_REGEXP   = /\b(do)\b\s*(\|.*?\|)?\s*$/
 
-    block_begin_keywords    = [
-                                # generic
-                                :begin,
+    build_keyword_regexp  = lambda {|*words| /\A\s*\b(#{words.join '|'})\b/ }
 
-                                # conditional
-                                :if,
-                                :unless,
-                                :case,
+    BLOCK_BEGIN_REGEXP    = build_keyword_regexp[
+                              # generic
+                              :begin,
 
-                                # loops
-                                :for,
-                                :while,
-                                :until
-                              ]
+                              # conditional
+                              :if, :unless, :case,
 
-    block_continue_keywords = [
-                                # generic
-                                :rescue,
-                                :ensure,
+                              # loops
+                              :for, :while, :until
+                            ]
 
-                                # conditional
-                                :else,
-                                :elsif,
-                                :when
-                              ]
+    BLOCK_CONTINUE_REGEXP = build_keyword_regexp[
+                              # generic
+                              :rescue, :ensure,
 
-    block_end_keywords      = [
-                                # generic
-                                :end
-                              ]
+                              # conditional
+                              :else, :elsif, :when
+                            ]
 
-    keyword_regexp_builder  = lambda do |keywords|
-                                /^\s*\b(#{keywords.join '|'})\b/
-                              end
-
-    BLOCK_BEGIN_REGEXP      = keyword_regexp_builder[block_begin_keywords]
-    BLOCK_CONTINUE_REGEXP   = keyword_regexp_builder[block_continue_keywords]
-    BLOCK_END_REGEXP        = keyword_regexp_builder[block_end_keywords]
+    BLOCK_END_REGEXP      = build_keyword_regexp[
+                              # generic
+                              :end
+                            ]
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
@@ -215,10 +211,10 @@ module Ember
 
       # build program from template
         margins = []
-        crowns = []
+        crowns  = []
 
         # parser actions
-          end_block = lambda do
+          close_block = lambda do
             raise 'cannot close unopened block' if margins.empty?
             margins.pop
             crowns.pop
@@ -229,8 +225,12 @@ module Ember
           end
 
           infer_end = lambda do |line, skip_last_level|
-            if current = line[MARGIN_REGEXP]
-              # determine the number of levels to ascend
+            if @options[:infer_end] and
+               program.new_line? and
+               not line.empty? and
+               current = line[MARGIN_REGEXP]
+            then
+              # number of levels to ascend
               levels = margins.select {|previous| current < previous }
 
               # in the case of block-continuation and -ending directives,
@@ -239,192 +239,160 @@ module Ember
               levels.pop if skip_last_level
 
               levels.each do
-                end_block.call
+                p :infer => line if $DEBUG
+                close_block.call
                 emit_end.call
               end
             end
           end
 
           unindent = lambda do |line|
-            if margin = margins.last and crown = crowns.first
+            if @options[:unindent] and
+               program.new_line? and
+               margin = margins.last and
+               crown = crowns.first
+            then
               line.sub(/^#{margin}/, crown)
             else
               line
             end
           end
 
-          process_line = lambda do |content_type, before_newline, before_spacing, content, after_margin|
+          process_content = lambda do |content|
+            content.split(/^/).each do |content_line|
+              # before_spacing
+              infer_end.call content_line, false
+              content_line = unindent.call(content_line)
 
-            have_before_newline = before_newline &&
-                                  !before_newline.empty?
+              # content + after_spacing
+              content_line.gsub! '<%%', '<%' # unescape escaped directives
+              program.text content_line
 
-            on_separate_line    = have_before_newline ||
-                                  program.empty?
+              # after_newline
+              program.new_line if content_line =~ /\n\z/
+            end
+          end
 
-            can_infer_end       = @options[:infer_end] &&
-                                  have_before_newline &&
-                                  before_spacing
+          process_directive = lambda do |content_line, before_spacing, directive, after_spacing, after_newline, after_content|
 
-            case content_type
-            when :content
-              line = "#{before_spacing}#{content}"
+            operation = directive[0, 1]
 
-              if can_infer_end
-                infer_end.call line, false
-              end
-
-              if have_before_newline
-                program.text before_newline
-              end
-
-              if on_separate_line
-                program.line
-
-                if @options[:unindent]
-                  line = unindent.call(line)
-                end
-              end
-
-              # unescape escaped directives
-              line.gsub! '<%%', '<%'
-
-              program.text line
-
-            when :directive
-              directive = content
-              operation = directive[0, 1]
+            if OPERATIONS.include? operation
               arguments = directive[1..-1]
+            else
+              operation = ''
+              arguments = directive
+            end
 
-              is_vocal_directive = VOCAL_OPERATIONS.include? operation
-              is_single_line_directive = directive !~ /\n/
+            is_vocal = VOCAL_OPERATIONS.include? operation
+            is_single_line = arguments !~ /\n/
 
-              # don't bother parsing multi-line code directives
-              if can_infer_end && (is_vocal_directive || is_single_line_directive)
-                # '.' stands in place of the directive body,
-                # which may be empty in the case of '<%%>'
-                infer_end.call before_spacing + '.',
-                               arguments =~ BLOCK_END_REGEXP ||
-                               arguments =~ BLOCK_CONTINUE_REGEXP
-              end
+            # before_spacing
+              after_margin = after_content[MARGIN_REGEXP]
 
-              # omit before_newline for silent directives
-              if have_before_newline && is_vocal_directive
-                program.text before_newline
-              end
-
-              if on_separate_line
-                program.line
-              end
-
-              if before_spacing && !before_spacing.empty?
-                # XXX: do not modify before_spacing because it is
-                #      used later on in the code to infer_end !!!
-                margin = before_spacing
-
-                if on_separate_line && @options[:unindent]
-                  margin = unindent.call(margin)
-                end
-
-                # omit before_spacing for silent directives
-                if !on_separate_line || is_vocal_directive
-                  program.text margin
-                end
-              end
-
-              begin_block = lambda do
+              open_block = lambda do
                 margins << after_margin
                 crowns  << before_spacing
               end
 
+              # '.' stands in place of the directive body,
+              # which may be empty in the case of '<%%>'
+              infer_end.call before_spacing + '.',
+                operation.empty? &&
+                arguments =~ BLOCK_END_REGEXP ||
+                arguments =~ BLOCK_CONTINUE_REGEXP
+
+              program.text unindent.call(before_spacing) if is_vocal
+
+            # directive
               template_class_name  = '::Ember::Template'
               nested_template_args = "(#{arguments}), #{@options.inspect}"
 
-              handle_nested_template = lambda do |meth|
-                program.code "#{template_class_name}.#{meth}(#{nested_template_args}.merge!(:continue_result => true)).render(binding)"
+              nest_template_with = lambda do |meth|
+                program.code "#{template_class_name}.#{meth}(#{
+                  nested_template_args
+                }.merge!(:continue_result => true)).render(binding)"
               end
 
-              if operation && !operation.empty?
-                case operation
-                when OPERATION_EVALUATE
-                  program.expr arguments
+              case operation
+              when OPERATION_EVAL_EXPRESSION
+                program.expr arguments
 
-                when OPERATION_COMMENT
-                  program.code directive.gsub(/\S/, ' ')
+              when OPERATION_CODE_COMMENT
+                program.code directive.gsub(/\S/, ' ')
 
-                when OPERATION_LAMBDA
-                  arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
-                  program.code "#{$`} #{$1 || 'do'} #{$2}"
+              when OPERATION_BEGIN_LAMBDA
+                arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
+                program.code "#{$`} #{$1 || 'do'} #{$2}"
 
-                  begin_block.call
+                p :begin => directive if $DEBUG
+                open_block.call
 
-                when OPERATION_TEMPLATE
-                  handle_nested_template.call :new
+              when OPERATION_EVAL_TEMPLATE_STRING
+                nest_template_with[:new]
 
-                when OPERATION_INCLUDE
-                  handle_nested_template.call :load_file
+              when OPERATION_EVAL_TEMPLATE_FILE
+                nest_template_with[:load_file]
 
-                when OPERATION_INSERT
-                  program.expr "#{template_class_name}.read_file(#{nested_template_args})"
+              when OPERATION_INSERT_PLAIN_FILE
+                program.expr "#{template_class_name}.read_file(#{nested_template_args})"
 
-                else
-                  program.code directive
+              else
+                program.code arguments
 
-                  if is_single_line_directive
-                    case directive
-                    when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
-                      begin_block.call
+                if is_single_line # don't bother parsing multi-line directives
+                  case arguments
+                  when BLOCK_BEGIN_REGEXP, LAMBDA_BEGIN_REGEXP
+                    p :begin => directive if $DEBUG
+                    open_block.call
 
-                    when BLOCK_CONTINUE_REGEXP
-                      end_block.call
-                      begin_block.call
+                  when BLOCK_CONTINUE_REGEXP
+                    p :continue => directive if $DEBUG
+                    close_block.call
+                    open_block.call
 
-                    when BLOCK_END_REGEXP
-                      end_block.call
-                    end
+                  when BLOCK_END_REGEXP
+                    p :close => directive if $DEBUG
+                    close_block.call
                   end
                 end
-
               end
-            else
-              raise ArgumentError, content_type
-            end
+
+            # after_spacing
+              program.text after_spacing if is_vocal || after_newline.empty?
+
+            # after_newline
+              program.text after_newline if is_vocal
+              program.new_line unless after_newline.empty?
           end
 
         # parser logic
-          chunks = template.split(/#{
-            '(%s?)(%s)%s(%s)%s' % [
-              NEWLINE,
+          directive_matches = template.scan(/#{
+            '((%s)%s(%s)%s(%s)(%s?))' % [
               SPACING,
               DIRECTIVE_HEAD,
               DIRECTIVE_BODY,
               DIRECTIVE_TAIL,
+              SPACING,
+              NEWLINE,
             ]
           }/mo)
 
-          while true
-            # raw content before the directive
-            if before_content = chunks.shift
-              lines = before_content.scan(/(#{NEWLINE}|\A)(#{SPACING})(.*)()/o)
+          directive_matches.each do |match|
+            # iteratively whittle the template
+            before_content, after_content = template.split(match[0], 2)
+            template = after_content
 
-              lines.each do |matches|
-                process_line.call :content, *matches
-              end
-            end
+            # process the raw content before the directive
+            process_content.call before_content
 
-            break unless chunks.length >= 3
-
-            # the directive itself
-            args = chunks.slice!(0, 3)
-
-            # '.' stands in place of the directive body,
-            # which may be empty in the case of '<%%>'
-            after_content = chunks.first(3).join + '.' # look ahead
-            after_margin = after_content[MARGIN_REGEXP]
-
-            args << after_margin
-
-            process_line.call :directive, *args
+            # process the directive itself
+            args = match + [after_content]
+            process_directive.call(*args)
           end
+
+          # process remaining raw content *after* last directive
+          process_content.call template
 
         # missing ends
           if @options[:infer_end]
@@ -462,8 +430,16 @@ module Ember
       ##
       # Begins a new line in the program's source code.
       #
-      def line
+      def new_line
         @source_lines << []
+      end
+
+      ##
+      # Returns true if a new (blank) line is
+      # ready in the program's source code.
+      #
+      def new_line?
+        insertion_point.empty?
       end
 
       ##
@@ -511,16 +487,22 @@ module Ember
             combine_prev = false
 
             source_line.each do |stmt|
-              case stmt.type
-              when :code
+              is_code = stmt.type == :code
+              is_expr = stmt.type == :expr
+
+              # ignore empty statements
+              next if (is_code || is_expr) && stmt.value.to_s !~ /\S/
+
+              if is_code
                 compiled_line << stmt.value
                 combine_prev = false
 
-              when :expr, :text
+              else
                 code =
-                  case stmt.type
-                  when :expr then " << (#{stmt.value})"
-                  when :text then " << #{stmt.value.inspect}"
+                  if is_expr
+                    " << (#{stmt.value})"
+                  else
+                    " << #{stmt.value.inspect}"
                   end
 
                 if combine_prev
@@ -530,9 +512,6 @@ module Ember
                 end
 
                 combine_prev = true
-
-              else
-                raise NotImplementedError, type
               end
             end
 
@@ -547,7 +526,7 @@ module Ember
       private
 
       def insertion_point
-        line if empty?
+        new_line if empty?
         @source_lines.last
       end
 
