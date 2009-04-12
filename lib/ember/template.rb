@@ -279,7 +279,7 @@ module Ember
          current = line[MARGIN_REGEXP]
       then
         # number of levels to ascend
-        levels = @margins.select {|previous| current < previous }
+        levels = @crowns.select {|previous| current <= previous }
 
         # in the case of block-continuation and -ending directives,
         # we must not ascend the very last (outmost) level at this
