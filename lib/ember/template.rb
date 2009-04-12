@@ -3,8 +3,8 @@ require 'pathname'
 module Ember
   class Template
     ##
-    # Returns the executable Ruby program that was assembled from the
-    # eRuby template provided as input to the constructor of this class.
+    # Ruby source code assembled from the eRuby template
+    # provided as input to the constructor of this class.
     #
     attr_reader :program
 
@@ -20,47 +20,46 @@ module Ember
     # the given template are called "vocal" directives.
     # Those that do not are called "silent" directives.
     #
-    # @param [Hash] options
-    #   Additional method parameters, which are all optional:
+    # ==== Options
     #
-    #   [#to_s] :result_variable =>
-    #     Name of the variable which stores the result of
-    #     template evaluation during template evaluation.
+    # [:result_variable]
+    #   Name of the variable which stores the result of
+    #   template evaluation during template evaluation.
     #
-    #     The default value is "_erbout".
+    #   The default value is "_erbout".
     #
-    #   [boolean] :continue_result =>
-    #     Append to the result variable if it already exists?
+    # [:continue_result]
+    #   Append to the result variable if it already exists?
     #
-    #     The default value is false.
+    #   The default value is false.
     #
-    #   [String] :source_file =>
-    #     Name of the file which contains the given input.  This
-    #     is shown in stack traces when reporting error messages.
+    # [:source_file]
+    #   Name of the file which contains the given input.  This
+    #   is shown in stack traces when reporting error messages.
     #
-    #     The default value is "SOURCE".
+    #   The default value is "SOURCE".
     #
-    #   [Integer] :source_line =>
-    #     Line number at which the given input exists in the :source_file.
-    #     This is shown in stack traces when reporting error messages.
+    # [:source_line]
+    #   Line number at which the given input exists in the :source_file.
+    #   This is shown in stack traces when reporting error messages.
     #
-    #     The default value is 1.
+    #   The default value is 1.
     #
-    #   [boolean] :shorthand =>
-    #     Treat lines beginning with "%" as eRuby directives.
+    # [:shorthand]
+    #   Treat lines beginning with "%" as eRuby directives?
     #
-    #     The default value is false.
+    #   The default value is false.
     #
-    #   [boolean] :infer_end =>
-    #     Add missing <% end %> statements based on indentation.
+    # [:infer_end]
+    #   Add missing <% end %> statements based on indentation?
     #
-    #     The default value is false.
+    #   The default value is false.
     #
-    #   [boolean] :unindent =>
-    #     Unindent the content of eRuby blocks (everything
-    #     between <% do %> ...  <% end %>) hierarchically.
+    # [:unindent]
+    #   Unindent the content of eRuby blocks (everything
+    #   between <% do %> ...  <% end %>) hierarchically?
     #
-    #     The default value is false.
+    #   The default value is false.
     #
     def initialize input, options = {}
       @options = options
@@ -118,13 +117,22 @@ module Ember
 
     private
 
+    OPERATION_EVAL_EXPRESSION      = '='
+    OPERATION_COMMENT_LINE         = '#'
+    OPERATION_BEGIN_LAMBDA         = '|'
+    OPERATION_EVAL_TEMPLATE_FILE   = '+'
+    OPERATION_EVAL_TEMPLATE_STRING = '~'
+    OPERATION_INSERT_PLAIN_FILE    = '<'
+
+    #:stopdoc:
+
     OPERATIONS            = [
-                              OPERATION_EVAL_EXPRESSION      = '=',
-                              OPERATION_CODE_COMMENT         = '#',
-                              OPERATION_BEGIN_LAMBDA         = '|',
-                              OPERATION_EVAL_TEMPLATE_FILE   = '+',
-                              OPERATION_EVAL_TEMPLATE_STRING = '~',
-                              OPERATION_INSERT_PLAIN_FILE    = '<',
+                              OPERATION_EVAL_EXPRESSION,
+                              OPERATION_COMMENT_LINE,
+                              OPERATION_BEGIN_LAMBDA,
+                              OPERATION_EVAL_TEMPLATE_FILE,
+                              OPERATION_EVAL_TEMPLATE_STRING,
+                              OPERATION_INSERT_PLAIN_FILE,
                             ]
 
     VOCAL_OPERATIONS      = [
@@ -179,6 +187,8 @@ module Ember
                               # generic
                               :end
                             ]
+
+    #:startdoc:
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
@@ -357,7 +367,7 @@ module Ember
         when OPERATION_EVAL_EXPRESSION
           @buffer.expr arguments
 
-        when OPERATION_CODE_COMMENT
+        when OPERATION_COMMENT_LINE
           @buffer.code directive.gsub(/\S/, ' ')
 
         when OPERATION_BEGIN_LAMBDA
