@@ -123,7 +123,7 @@ module Ember
                               OPERATION_CODE_COMMENT         = '#',
                               OPERATION_BEGIN_LAMBDA         = '|',
                               OPERATION_EVAL_TEMPLATE_FILE   = '+',
-                              OPERATION_EVAL_TEMPLATE_STRING = '*',
+                              OPERATION_EVAL_TEMPLATE_STRING = '~',
                               OPERATION_INSERT_PLAIN_FILE    = '<',
                             ]
 
