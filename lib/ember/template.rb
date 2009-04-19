@@ -449,7 +449,8 @@ module Ember
       # ready in the program's source code.
       #
       def new_line?
-        insertion_point.empty?
+        ary = insertion_point
+        ary.empty? || ary.all? {|stmt| stmt.type == :code }
       end
 
       ##
