@@ -22,30 +22,24 @@
 #
 
 require 'rubygems'
-gem 'inochi', '~> 0'
 require 'inochi'
 
-# command line
-  options = Inochi.main :Ember do
-    opt :shorthand, 'Treat lines beginning with "%" as directives'
+options = Inochi.main :Ember do
+  opt :shorthand, 'Treat lines beginning with "%" as directives'
+  opt :infer_end, 'Add "end" statements based on indentation'
+  opt :unindent, 'Unindent block content hierarchically'
+  opt :compile, 'Print template program and exit'
+end
 
-    opt :infer_end, 'Add "end" statements based on indentation'
-
-    opt :unindent, 'Unindent block content hierarchically'
-
-    opt :compile, 'Print template program and exit'
-  end
-
-# program body
-  template =
-    if source = ARGV.shift
-      Ember::Template.load_file(source, options)
-    else
-      Ember::Template.new(STDIN.read, options)
-    end
-
-  if options[:compile]
-    puts template.program
+template =
+  if source = ARGV.shift
+    Ember::Template.load_file(source, options)
   else
-    puts template.render
+    Ember::Template.new(STDIN.read, options)
   end
+
+if options[:compile]
+  puts template.program
+else
+  puts template.render
+end
