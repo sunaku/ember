@@ -303,7 +303,7 @@ module Ember
          margin = @margins.last and
          crown = @crowns.first
       then
-        line.sub(/^#{margin}/, crown)
+        line.gsub(/^#{margin}/, crown)
       else
         line
       end
@@ -333,6 +333,8 @@ module Ember
         operation = ''
         arguments = directive
       end
+
+      arguments = unindent(arguments)
 
       is_vocal = VOCAL_OPERATIONS.include? operation
 
