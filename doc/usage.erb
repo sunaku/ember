@@ -1,26 +1,65 @@
-<% chapter "Usage" do %>
-  <% section "Command-line interface" do %>
+%|chapter "Usage"
+  %|section "Command-line interface"
     When you run this command:
 
         <%= $program %> --help
 
     You will see this output:
 
-    <pre><%= verbatim `ruby bin/#{$program_name} --help` %></pre>
+    <pre><%= verbatim `ruby bin/#{$program} --help` %></pre>
 
-    > TODO: explain the command-line arguments
-  <% end %>
+  %|section "Ruby library interface"
+    Begin by loading <%= $project %> into Ruby:
 
-  <% section "Ruby library interface" do %>
-    > TODO: explain how to use your project's Ruby library
-    >       from inside another Ruby program or library
-  <% end %>
+    <code>
+    require 'rubygems'
+    require 'ember'
+    </code>
 
-  <% section "Tutorial" do %>
-    This tutorial shows how **<%= $project %>** is used to __________.
+    Instantiate a template processor:
 
-    > TODO: give examples for doing common tasks
-  <% end %>
+    <code>
+    source   = "your eRuby template here"
+    options  = { :unindent => true, :shorthand => true }
 
-  > TODO: explain how to do more (advanced) things
-<% end %>
+    template = Ember::Template.new(source, options)
+    </code>
+
+    Inspect the Ruby program that is used to evaluate the eRuby template:
+
+    <code>
+    puts template.program
+    </code>
+
+    View the result of evaluating the eRuby template:
+
+    <code>
+    puts template.render
+    </code>
+
+    See the [API documentation](<%= api_url %>) for details and examples.
+
+  %|section "eRuby template directives", "Directives"
+    eRuby templates are plain-text documents that contain special processing instructions known as **directives**.  Directives may be expressed using either **standard** or **shorthand** notation:
+
+    | Notation  | Directive | Head | Operation | Body | Tail |
+    | --------  | --------- | ---- | --------- | ---- | ---- |
+    | Standard  | <%%XY%>   | <%%  | X         | Y    | %>   |
+    | Shorthand | %XY       | %    | X         | Y    |      |
+
+    In standard notation, the directive is composed of a head, <%= xref "Operations", "an operation" %>, a body, and a tail.  Furthermore, the directive may appear anywhere in the text, except within another directive.
+
+    In shorthand notation, the directive is composed of a head, <%= xref "Operations", "an operation" %> and a body.  Furthermore, the directive may only appear in the text if it occupies an entire line.
+
+    %|section "Operations"
+      The first character that follows the head of a directive is known as an **operation**.  Operations specify how the directive should be processed:
+
+      | Operation                                              | Effect                                                                                                                                                                                                                                                                                                                                                                                                                        |
+      | ---------                                              | ------                                                                                                                                                                                                                                                                                                                                                                                                                        |
+      | <%= Ember::Template::OPERATION_COMMENT_LINE %>         | The entire directive is omitted from the output.                                                                                                                                                                                                                                                                                                                                                                        |
+      | <%= Ember::Template::OPERATION_EVAL_EXPRESSION %>      | The body of the directive is evaluated as Ruby code, and the result of this evaluation is inserted into the output.                                                                                                                                                                                                                                                                                                     |
+      | <%= Ember::Template::OPERATION_EVAL_TEMPLATE_STRING %> | The body of the directive is evaluated as an eRuby template, and the result of this evaluation is inserted into the output.                                                                                                                                                                                                                                                                                             |
+      | <%= Ember::Template::OPERATION_EVAL_TEMPLATE_FILE %>   | The body of the directive is evaluated as Ruby code, and the result of this evaluation is assumed to be a string that specifies the path (either absolute or relative to the eRuby template file in which this directive is found) to a file containing an eRuby template.  This file is read and its contents are evaluated as an eRuby template, and the result of this evaluation is inserted into the output. |
+      | <%= Ember::Template::OPERATION_INSERT_PLAIN_FILE %>    | The body of the directive is evaluated as Ruby code, and the result of this evaluation is assumed to be a string that specifies the path (either absolute or relative to the eRuby template file in which this directive is found) to a file.  This file is read and its contents are inserted into the output.                                                                                                   |
+      | &#124;                                                 | The body of the directive is treated as the beginning of a Ruby block.  The `do` keyword is automatically appended to the body of the directive if missing.                                                                                                                                                                                                                                                       |
+      | (none of the above)                                    | The body of the directive is evaluated as Ruby code, but the result of this evaluation *is not* inserted into the output.                                                                                                                                                                                                                                                                                               |

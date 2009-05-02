@@ -329,10 +329,10 @@
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1686"
-     inkscape:window-height="1115"
-     inkscape:window-x="0"
-     inkscape:window-y="21"
+     inkscape:window-width="958"
+     inkscape:window-height="1073"
+     inkscape:window-x="960"
+     inkscape:window-y="84"
      showguides="false"
      inkscape:guide-bbox="true"
      inkscape:snap-global="true">
@@ -369,16 +369,6 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-418.85717,-522.75203)">
-    <path
-       sodipodi:type="arc"
-       style="fill:#e9c6af;fill-opacity:1;fill-rule:nonzero;stroke:none"
-       id="path2820"
-       sodipodi:cx="275"
-       sodipodi:cy="275"
-       sodipodi:rx="275"
-       sodipodi:ry="275"
-       d="M 550,275 A 275,275 0 1 1 0,275 A 275,275 0 1 1 550,275 z"
-       transform="matrix(0.9963636,0,0,0.9963636,418.85717,522.75205)" />
     <g
        id="g6238"
        transform="matrix(0.7978721,0,0,0.7978721,220.05098,610.20583)"
