@@ -8,12 +8,6 @@ require 'pathname'
 module Ember
   class Template
     ##
-    # Ruby source code assembled from the eRuby template
-    # provided as input to the constructor of this class.
-    #
-    attr_reader :program
-
-    ##
     # Builds a processor that evaluates eRuby directives
     # in the given input according to the given options.
     #
@@ -68,7 +62,15 @@ module Ember
     #
     def initialize input, options = {}
       @options = options
-      @program = compile(input.to_s)
+      @compile = compile(input.to_s)
+    end
+
+    ##
+    # Ruby source code assembled from the eRuby template
+    # provided as input to the constructor of this class.
+    #
+    def program
+      @compile
     end
 
     ##
@@ -76,7 +78,7 @@ module Ember
     # (provided by the #to_s() method) inside the given context binding.
     #
     def render(context = TOPLEVEL_BINDING)
-      eval @program, context,
+      eval @compile, context,
         (@options[:source_file] || :SOURCE).to_s,
         (@options[:source_line] || 1).to_i
     end
@@ -132,19 +134,20 @@ module Ember
     #:stopdoc:
 
     OPERATIONS            = [
-                              OPERATION_EVAL_EXPRESSION,
                               OPERATION_COMMENT_LINE,
                               OPERATION_BEGIN_LAMBDA,
+                              OPERATION_EVAL_EXPRESSION,
                               OPERATION_EVAL_TEMPLATE_FILE,
                               OPERATION_EVAL_TEMPLATE_STRING,
                               OPERATION_INSERT_PLAIN_FILE,
                             ]
 
-    VOCAL_OPERATIONS      = [
-                              OPERATION_EVAL_EXPRESSION,
-                              OPERATION_EVAL_TEMPLATE_FILE,
-                              OPERATION_EVAL_TEMPLATE_STRING,
+    SILENT_OPERATIONS     = [
+                              OPERATION_COMMENT_LINE,
+                              OPERATION_BEGIN_LAMBDA,
                             ]
+
+    VOCAL_OPERATIONS      = OPERATIONS - SILENT_OPERATIONS
 
     DIRECTIVE_HEAD        = '<%'
     DIRECTIVE_BODY        = '(?:(?#
@@ -199,7 +202,7 @@ module Ember
     # Transforms the given eRuby template into an executable Ruby program.
     #
     def compile template
-      @buffer = Program.new(
+      @program = Program.new(
         @options[:result_variable] || :_erbout,
         @options[:continue_result]
       )
@@ -257,14 +260,12 @@ module Ember
 
         # handle missing ends
         if @options[:infer_end]
-          @margins.each do
-            emit_end
-          end
+          @margins.each { emit_end }
         else
           warn "There are at least #{@margins.length} missing '<% end %>' statements in the eRuby template." unless @margins.empty?
         end
 
-      @buffer.compile
+      @program.compile
     end
 
     def close_block
@@ -274,24 +275,24 @@ module Ember
     end
 
     def emit_end
-      @buffer.code :end
+      @program.emit_end
     end
 
     def infer_end line, skip_last_level = false
       if @options[:infer_end] and
-         @buffer.new_line? and
+         @program.new_line? and
          not line.empty? and
          current = line[MARGIN_REGEXP]
       then
         # number of levels to ascend
-        levels = @crowns.select {|previous| current <= previous }
+        levels = @crowns.select {|previous| current <= previous }.length
 
         # in the case of block-continuation and -ending directives,
         # we must not ascend the very last (outmost) level at this
         # point of the algorithm.  that work will be done later on
-        levels.pop if skip_last_level
+        levels -= 1 if skip_last_level
 
-        levels.each do
+        levels.times do |i|
           p :infer => line if $DEBUG
           close_block
           emit_end
@@ -304,7 +305,7 @@ module Ember
     #
     def unindent line
       if @options[:unindent] and
-         @buffer.new_line? and
+         @program.new_line? and
          margin = @margins.last and
          crown = @crowns.first
       then
@@ -322,10 +323,10 @@ module Ember
 
         # content + after_spacing
         content_line.gsub! '<%%', '<%' # unescape escaped directives
-        @buffer.text content_line
+        @program.text content_line
 
         # after_newline
-        @buffer.new_line if content_line =~ /\n\z/
+        @program.new_line if content_line =~ /\n\z/
       end
     end
 
@@ -358,28 +359,28 @@ module Ember
           arguments =~ BLOCK_END_REGEXP ||
           arguments =~ BLOCK_CONTINUE_REGEXP
 
-        @buffer.text unindent(before_spacing) if is_vocal
+        @program.text unindent(before_spacing) if is_vocal
 
       # directive
         template_class_name  = '::Ember::Template'
         nested_template_args = "(#{arguments}), #{@options.inspect}"
 
         nest_template_with = lambda do |meth|
-          @buffer.code "#{template_class_name}.#{meth}(#{
+          @program.code "#{template_class_name}.#{meth}(#{
             nested_template_args
           }.merge!(:continue_result => true)).render(binding)"
         end
 
         case operation
         when OPERATION_EVAL_EXPRESSION
-          @buffer.expr arguments
+          @program.expr arguments
 
         when OPERATION_COMMENT_LINE
-          @buffer.code directive.gsub(/\S/, ' ')
+          @program.code directive.gsub(/\S/, ' ')
 
         when OPERATION_BEGIN_LAMBDA
-          arguments =~ /(\bdo\b)?\s*(\|.*?\|)?\s*\z/
-          @buffer.code "#{$`} #{$1 || 'do'} #{$2}"
+          arguments =~ /(\bdo\b)?\s*(\|[^\|]*\|)?\s*\z/
+          @program.code "#{$`} #{$1 || 'do'} #{$2}"
 
           p :begin => directive if $DEBUG
           open_block.call
@@ -391,10 +392,10 @@ module Ember
           nest_template_with[:load_file]
 
         when OPERATION_INSERT_PLAIN_FILE
-          @buffer.expr "#{template_class_name}.read_file(#{nested_template_args})"
+          @program.expr "#{template_class_name}.read_file(#{nested_template_args})"
 
         else
-          @buffer.code arguments
+          @program.code arguments
 
           unless arguments =~ /\n/ # don't bother parsing multi-line directives
             case arguments
@@ -416,11 +417,11 @@ module Ember
         end
 
       # after_spacing
-        @buffer.text after_spacing if is_vocal || after_newline.empty?
+        @program.text after_spacing if is_vocal || after_newline.empty?
 
       # after_newline
-        @buffer.text after_newline if is_vocal
-        @buffer.new_line unless after_newline.empty?
+        @program.text after_newline if is_vocal
+        @program.new_line unless after_newline.empty?
     end
 
     class Program
@@ -493,6 +494,36 @@ module Ember
       end
 
       ##
+      # Inserts an <% end %> directive before the
+      # oldest non-whitespace statement possible.
+      #
+      # Preceding lines that only emit whitespace are skipped.
+      #
+      def emit_end
+        ending  = Statement.new(:code, :end)
+        current = insertion_point
+
+        can_skip_line = lambda do |line|
+          line.empty? ||
+          line.all? {|stmt| stmt.type == :text && stmt.value =~ /\A\s*\z/ }
+        end
+
+        if can_skip_line[current]
+          target = current
+
+          # skip past empty whitespace in previous lines
+          @source_lines.reverse_each do |line|
+            break unless can_skip_line[line]
+            target = line
+          end
+
+          target.unshift ending
+        else
+          current.push ending
+        end
+      end
+
+      ##
       # Transforms this program into executable Ruby source code.
       #
       def compile
@@ -507,9 +538,6 @@ module Ember
             source_line.each do |stmt|
               is_code = stmt.type == :code
               is_expr = stmt.type == :expr
-
-              # ignore empty statements
-              next if (is_code || is_expr) && stmt.value.to_s !~ /\S/
 
               if is_code
                 compiled_line << stmt.value

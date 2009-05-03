@@ -9,14 +9,14 @@
 
 %|chapter "Introduction"
   %|project
-    <%= $project %> is an eRuby template processsor that lets you write less eRuby markup and debug errors in eRuby templates.
+    <%= $project %> is an [eRuby template](http://en.wikipedia.org/wiki/ERuby) processsor that facilitates debugging, reduces markup, and improves composability of eRuby templates.
 
     <%= $project %> is exciting because:
     * It reports correct line numbers in stack traces.
     * It can infer <tt><%% end %></tt> based on indentation.
     * It can unindent block content hierarchically.
-    * It provides shorthand notation for eRuby directives.
     * It completely silences code-only eRuby directives.
+    * It is implemented in <%= `sloccount lib`[/^\d+/] %> lines of pure Ruby.
 
     These features distinguish <%= $project %> from the competition:
     * [Erubis](http://www.kuwata-lab.com/erubis/)
@@ -30,6 +30,7 @@
     * <%= xref "History", "Release notes" %> --- history of project releases.
     * [Source code](<%= repo_url %>) --- obtain via <%= repo_scm %> or browse online.
     * [API reference](<%= api_url %>) --- documentation for source code.
+    * [Project home](<%= $website %>) --- the <%= $project %> project home page.
 
     To get help or provide feedback, simply
     <%= xref "License", "contact the author(s)" %>.

@@ -1,28 +1,14 @@
+require 'dfect/mini'
 require 'inochi/util/combo'
-require 'dfect/emu/mini'
-
-class Array
-  ##
-  # Invokes the given block, passing in the result
-  # of Array#join, for every possible combination.
-  #
-  def each_join
-    raise ArgumentError unless block_given?
-
-    permutations do |combo|
-      yield combo.join
-    end
-  end
-end
 
 describe "A template" do
-  it "should render single & multi-line comments as nothing" do
+  it "renders single & multi-line comments as nothing" do
     WHITESPACE.each_join do |s|
       render("<%##{s}an#{s}eRuby#{s}comment#{s}%>").must_equal("")
     end
   end
 
-  it "should render directives with whitespace-only bodies as nothing" do
+  it "renders directives with whitespace-only bodies as nothing" do
     WHITESPACE.each_join do |s|
       OPERATIONS.each do |o|
         render("<%#{o}#{s}%>").must_equal("")
@@ -30,7 +16,7 @@ describe "A template" do
     end
   end
 
-  it "should render escaped directives in unescaped form" do
+  it "renders escaped directives in unescaped form" do
     render("<%%%>").must_equal("<%%>")
 
     render("<%% %>").must_equal("<% %>")
@@ -50,7 +36,7 @@ describe "A template" do
     end
   end
 
-  it "should render whitespace surrounding vocal directives correctly" do
+  it "renders whitespace surrounding vocal directives correctly" do
     o = rand.to_s
     i = "<%= #{o} %>"
 
@@ -61,7 +47,7 @@ describe "A template" do
     end
   end
 
-  it "should render whitespace surrounding silent directives correctly" do
+  it "renders whitespace surrounding silent directives correctly" do
     i = '<%%>'
     o = ''
 
@@ -90,10 +76,14 @@ describe "A template" do
 end
 
 describe "A program compiled from a template" do
-  it "should have the same number of lines, regardless of template options" do
+  it "has the same number of lines as its input, regardless of template options" do
     (BLANK + NEWLINES).each do |s|
-      test_num_lines(s)
-      test_num_lines("hello#{s}world")
+      test_num_lines s
+      test_num_lines "hello#{s}world"
+
+      OPERATIONS.each do |o|
+        test_num_lines "<%#{o}hello#{s}world%>"
+      end
     end
   end
 
@@ -132,6 +122,20 @@ describe "A program compiled from a template" do
 
     combinations do |flags|
       yield Hash[ *flags.map {|f| [f, true] }.flatten ]
+    end
+  end
+end
+
+class Array
+  ##
+  # Invokes the given block, passing in the result
+  # of Array#join, for every possible combination.
+  #
+  def each_join
+    raise ArgumentError unless block_given?
+
+    permutations do |combo|
+      yield combo.join
     end
   end
 end

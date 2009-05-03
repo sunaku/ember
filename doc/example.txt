@@ -1,0 +1,2 @@
+This is a plain-text file.  Notice that <%=
+"eRuby directives" %> have no effect here!
