@@ -1,4 +1,5 @@
-require 'inochi/util/combinatorics'
+require 'inochi/util/combo'
+require 'dfect/emu/mini'
 
 class Array
   ##
@@ -67,11 +68,10 @@ describe "A template" do
     SPACES.each_join do |s|
       NEWLINES.each do |n|
         # without preceding newline
-        render("a#{s}#{i}#{n}#{s}b").must_equal("a#{s}#{o}#{n}#{s}b")
+        render("a#{s}#{i}#{n}b").must_equal("a#{o}b")
 
         # with preceding newline
-        render("a#{n}#{s}#{i}#{s}b").must_equal("a#{o}#{s}b",
-          "preceding newline and spacing must be removed for silent directives")
+        render("a#{n}#{s}#{i}#{n}b").must_equal("a#{n}#{o}b")
       end
     end
   end

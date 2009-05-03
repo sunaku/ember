@@ -3,10 +3,6 @@
 # Evaluates eRuby directives in the given eRuby template and
 # writes the result to the standard output stream (STDOUT).
 #
-# eRuby directives that contribute to the output of the given
-# template are called "vocal" directives.  Those that do not
-# are called "silent" directives.
-#
 #
 # Usage:
 #
@@ -21,7 +17,13 @@
 # Options:
 #
 
+#--
+# Copyright 2009 Suraj N. Kurapati
+# See the LICENSE file for details.
+#++
+
 require 'rubygems'
+gem 'inochi', '~> 1'
 require 'inochi'
 
 options = Inochi.main :Ember do
