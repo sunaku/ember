@@ -323,7 +323,7 @@ module Ember
 
         # content + after_spacing
         content_line.gsub! '<%%', '<%' # unescape escaped directives
-        @program.text content_line
+        @program.emit_text content_line
 
         # after_newline
         @program.new_line if content_line =~ /\n\z/
@@ -359,28 +359,28 @@ module Ember
           arguments =~ BLOCK_END_REGEXP ||
           arguments =~ BLOCK_CONTINUE_REGEXP
 
-        @program.text unindent(before_spacing) if is_vocal
+        @program.emit_text unindent(before_spacing) if is_vocal
 
       # directive
         template_class_name  = '::Ember::Template'
         nested_template_args = "(#{arguments}), #{@options.inspect}"
 
         nest_template_with = lambda do |meth|
-          @program.code "#{template_class_name}.#{meth}(#{
+          @program.emit_code "#{template_class_name}.#{meth}(#{
             nested_template_args
           }.merge!(:continue_result => true)).render(binding)"
         end
 
         case operation
         when OPERATION_EVAL_EXPRESSION
-          @program.expr arguments
+          @program.emit_expr arguments
 
         when OPERATION_COMMENT_LINE
-          @program.code directive.gsub(/\S/, ' ')
+          @program.emit_code directive.gsub(/\S/, ' ')
 
         when OPERATION_BEGIN_LAMBDA
           arguments =~ /(\bdo\b)?\s*(\|[^\|]*\|)?\s*\z/
-          @program.code "#{$`} #{$1 || 'do'} #{$2}"
+          @program.emit_code "#{$`} #{$1 || 'do'} #{$2}"
 
           p :begin => directive if $DEBUG
           open_block.call
@@ -392,10 +392,10 @@ module Ember
           nest_template_with[:load_file]
 
         when OPERATION_INSERT_PLAIN_FILE
-          @program.expr "#{template_class_name}.read_file(#{nested_template_args})"
+          @program.emit_expr "#{template_class_name}.read_file(#{nested_template_args})"
 
         else
-          @program.code arguments
+          @program.emit_code arguments
 
           unless arguments =~ /\n/ # don't bother parsing multi-line directives
             case arguments
@@ -417,14 +417,14 @@ module Ember
         end
 
       # after_spacing
-        @program.text after_spacing if is_vocal || after_newline.empty?
+        @program.emit_text after_spacing if is_vocal || after_newline.empty?
 
       # after_newline
-        @program.text after_newline if is_vocal
+        @program.emit_text after_newline if is_vocal
         @program.new_line unless after_newline.empty?
     end
 
-    class Program
+    class Program #:nodoc:
       ##
       # Transforms this program into Ruby code which uses
       # the given variable name as the evaluation buffer.
@@ -465,7 +465,7 @@ module Ember
       # Schedules the given text to be inserted verbatim
       # into the evaluation buffer when this program is run.
       #
-      def text value
+      def emit_text value
         # don't bother emitting empty strings
         return if value.empty?
 
@@ -481,7 +481,7 @@ module Ember
       # Schedules the given Ruby code to be
       # evaluated when this program is run.
       #
-      def code value
+      def emit_code value
         statement :code, value
       end
 
@@ -489,7 +489,7 @@ module Ember
       # Schedules the given Ruby code to be evaluated and inserted
       # into the evaluation buffer when this program is run.
       #
-      def expr value
+      def emit_expr value
         statement :expr, value
       end
 
