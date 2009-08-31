@@ -3,8 +3,12 @@
 %# See LICENSE file for details.
 %#++
 
+
 %|chapter "Usage"
+
+
   %|section "Command-line interface"
+
     When you run this command:
 
         <%= $program %> --help
@@ -13,7 +17,9 @@
 
     <pre><%= verbatim `ruby bin/#{$program} --help` %></pre>
 
+
   %|section "Ruby library interface"
+
     Begin by loading <%= $project %> into Ruby:
 
     <code>
@@ -44,7 +50,9 @@
 
     See the [API documentation](<%= api_url %>) for details and examples.
 
+
   %|section "eRuby template directives", "Directives"
+
     eRuby templates are plain-text documents that contain special processing instructions known as **directives**.  Directives may be expressed using either **standard** or **shorthand** notation:
 
     | Notation  | Directive | Head | Operation | Body | Tail |
@@ -58,7 +66,9 @@
 
     In any case, directives are atomic constructs; they may not be nested.
 
+
     %|section "Operations"
+
       The first character that follows the head of a directive is known as an **operation**.  Operations specify how the directive should be processed:
 
       | Operation                                              | Effect                                                                                                                                                                                                                                                                                                                                                                                                            | Example                                   |
@@ -105,12 +115,16 @@
         end
       %>
 
+
       %|example "An empty template"
+
         Begin with an empty template:
 
-        <%= template_example.call "", {} %>
+        %= template_example.call "", {}
+
 
       %|example "Comment directives"
+
         Add comment directives:
 
         <%=
@@ -122,7 +136,9 @@
           }, :shorthand => true
         %>
 
+
       %|example "Escaped directives"
+
         Add escaped directives:
 
         <%=
@@ -134,7 +150,9 @@
           }, :shorthand => true
         %>
 
+
       %|example "Vocal directives"
+
         Add vocal directives, which produce output:
 
         <%=
@@ -145,7 +163,9 @@
           }, :shorthand => true
         %>
 
+
       %|example "Silent directives"
+
         Add silent directives, which do not produce output:
 
         <%=
@@ -159,7 +179,9 @@
           }, :shorthand => true
         %>
 
+
       %|example "Block directives"
+
         Add some Ruby blocks:
 
         <%=
@@ -181,7 +203,9 @@
           }, :shorthand => true
         %>
 
+
       %|example "Infer block endings"
+
         Omit <tt><%= standard_directive[' end'] %></tt> directives from the template:
 
         <%=
@@ -200,7 +224,9 @@
           }, :shorthand => true, :infer_end => true
         %>
 
+
       %|example "Raw file inclusion"
+
         When <tt>doc/example.txt</tt> contains:
 
         <pre><%< "example.txt" %></pre>
@@ -218,7 +244,9 @@
           }, :shorthand => true, :source_file => __FILE__
         %>
 
+
       %|example "Template file inclusion"
+
         When <tt>doc/example.erb</tt> contains:
 
         <code lang="rhtml"><%< "example.erb" %></code>
@@ -236,7 +264,9 @@
           }, :shorthand => true, :source_file => __FILE__
         %>
 
+
       %|example "Dynamic template evaluation"
+
         <%=
           example = %{~ "#{shorthand_directive['= 2 + 2']}"}
 
@@ -247,3 +277,4 @@
 
           }, :shorthand => true
         %>
+
