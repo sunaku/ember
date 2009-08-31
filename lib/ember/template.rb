@@ -11,9 +11,10 @@ module Ember
     # Builds a processor that evaluates eRuby directives
     # in the given input according to the given options.
     #
-    # This processor transforms the given input into an
-    # executable Ruby program (provided by the #to_s() method)
-    # which is then executed by the #render() method on demand.
+    # This processor transforms the given input
+    # into an executable Ruby program (provided
+    # by the #program() method) which is then
+    # executed by the #render() method on demand.
     #
     # eRuby directives that contribute to the output of
     # the given template are called "vocal" directives.
@@ -75,7 +76,7 @@ module Ember
 
     ##
     # Returns the result of executing the Ruby program for this template
-    # (provided by the #to_s() method) inside the given context binding.
+    # (provided by the #program() method) inside the given context binding.
     #
     def render(context = TOPLEVEL_BINDING)
       eval @compile, context,
