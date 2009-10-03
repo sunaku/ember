@@ -63,6 +63,7 @@ module Ember
     #
     def initialize input, options = {}
       @options = options
+      @render_context_id = object_id
       @compile = compile(input.to_s)
     end
 
@@ -74,14 +75,22 @@ module Ember
       @compile
     end
 
+    @@contexts = {}
+
     ##
     # Returns the result of executing the Ruby program for this template
     # (provided by the #program() method) inside the given context binding.
     #
-    def render(context = TOPLEVEL_BINDING)
-      eval @compile, context,
+    def render context = TOPLEVEL_BINDING, parent_context_id = nil
+      context ||= @@contexts[parent_context_id] # inherit parent context
+      @@contexts[@render_context_id] = context  # provide to children
+
+      result = eval @compile, context,
         (@options[:source_file] || :SOURCE).to_s,
         (@options[:source_line] || 1).to_i
+
+      @@contexts.delete @render_context_id      # free the memory
+      result
     end
 
     class << self
@@ -369,7 +378,7 @@ module Ember
         nest_template_with = lambda do |meth|
           @program.emit_code "#{template_class_name}.#{meth}(#{
             nested_template_args
-          }.merge!(:continue_result => true)).render(binding)"
+          }.merge!(:continue_result => true)).render(nil, #{@render_context_id.inspect})"
         end
 
         case operation
