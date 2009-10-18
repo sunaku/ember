@@ -1,16 +1,16 @@
 unless Ember.const_defined? :INOCHI
-  fail "#{Ember} must have INOCHI constant"
+  fail "Ember must be established by Inochi"
 end
 
 Ember::INOCHI.each do |param, value|
   const = param.to_s.upcase
 
   unless Ember.const_defined? const
-    fail "#{Ember} must have #{const} constant"
+    fail "Ember::#{const} must be established by Inochi"
   end
 
   unless Ember.const_get(const) == value
-    fail "#{Ember}'s #{const} constant must be provided by Inochi"
+    fail "Ember::#{const} is not what Inochi established"
   end
 end
 
