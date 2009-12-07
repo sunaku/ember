@@ -161,14 +161,14 @@ module Ember
 
     DIRECTIVE_HEAD        = '<%'
     DIRECTIVE_BODY        = '(?:(?#
-                                there is nothing here before the alternation
+                                there is nothing here, before the alternation,
                                 because we want to match the "<%%>" base case
                               )|[^%](?:.(?!<%))*?)'
     DIRECTIVE_TAIL        = '-?%>'
 
     SHORTHAND_HEAD        = '%'
     SHORTHAND_BODY        = '(?:(?#
-                                there is nothing here before the alternation
+                                there is nothing here, before the alternation,
                                 because we want to match the "<%%>" base case
                               )|[^%].*)'
     SHORTHAND_TAIL        = '$'
