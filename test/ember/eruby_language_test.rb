@@ -11,11 +11,23 @@ describe ERubyLanguage do
 
   context 'empty directives' do
     assert @parser.parse('<%%>')
+    refute @parser.parse('<%%%>')
+    refute @parser.parse('<%% %>')
+    refute @parser.parse('<% %%>')
+    refute @parser.parse('<%%%%>')
   end
 
   context 'blank directives' do
     [' ', "\t", "\r", "\n", "\f"].permutations do |sequence|
-      assert @parser.parse("<%#{sequence.join}%>")
+      whitespace = sequence.join
+      assert @parser.parse("<%#{whitespace}%>")
+      refute @parser.parse("<%#{whitespace}%%>")
+      refute @parser.parse("<%%#{whitespace}%>")
+      refute @parser.parse("<%%#{whitespace}%%>")
+
+      next if whitespace.empty?
+      assert @parser.parse("<%#{whitespace}%#{whitespace}%>")
+      assert @parser.parse("<%#{whitespace}%%#{whitespace}%>")
     end
   end
 
@@ -28,9 +40,16 @@ describe ERubyLanguage do
 
   context 'nested directives' do
     refute @parser.parse("<% inner %> outer %>")
+    assert @parser.parse("<% inner %%> outer %>")
+
     refute @parser.parse("<% outer <% inner %>")
+    assert @parser.parse("<% outer <%% inner %>")
+
     refute @parser.parse("<% outer <% inner %> outer %>")
+    assert @parser.parse("<% outer <%% inner %%> outer %>")
+
     refute @parser.parse("<% outer <% inner <% atomic %> inner %> outer %>")
+    assert @parser.parse("<% outer <%% inner <%% atomic %%> inner %%> outer %>")
   end
 end
 

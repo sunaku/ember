@@ -1,19 +1,23 @@
 grammar ERubyLanguage
 
   rule directive
-    directive_head directive_body directive_tail
+    head tail
+    /
+    head bind tail
+    /
+    head bind ( !(head bind) !(bind tail) . )* bind tail
   end
 
-  rule directive_head
+  rule head
     '<%'
   end
 
-  rule directive_body
-    ( !directive_head !directive_tail . )*
+  rule tail
+    '%>'
   end
 
-  rule directive_tail
-    '%>'
+  rule bind
+    [^%]
   end
 
 end
