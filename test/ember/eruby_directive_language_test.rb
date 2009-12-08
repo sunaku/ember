@@ -2,11 +2,11 @@ require File.dirname(__FILE__) + '/../helper.rb'
 require 'inochi/util/combo'
 
 require 'treetop'
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_language"
+Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive_language"
 
-describe ERubyLanguage do
+describe ERubyDirectiveLanguage do
   setup do
-    @parser = ERubyLanguageParser.new
+    @parser = ERubyDirectiveLanguageParser.new
   end
 
   context 'empty directives' do

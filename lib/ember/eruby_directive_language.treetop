@@ -1,4 +1,4 @@
-grammar ERubyLanguage
+grammar ERubyDirectiveLanguage
 
   rule directive
     head tail
