@@ -1,0 +1,7 @@
+grammar ERubyLanguage
+
+  rule directive
+    '<%' '%>'
+  end
+
+end

@@ -13,4 +13,8 @@ Inochi.init :Ember,
   :website => 'http://snk.tuxfamily.org/lib/ember/',
   :tagline => 'eRuby template processor'
 
+module Ember
+  LIBRARY_DIR = File.dirname(__FILE__)
+end
+
 require 'ember/template'
