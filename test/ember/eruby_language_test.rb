@@ -18,5 +18,12 @@ describe ERubyLanguage do
       assert @parser.parse("<%#{sequence.join}%>")
     end
   end
+
+  context 'non-blank directives' do
+    assert @parser.parse("<%hello%>")
+    assert @parser.parse("<% hello%>")
+    assert @parser.parse("<%hello %>")
+    assert @parser.parse("<% hello %>")
+  end
 end
 
