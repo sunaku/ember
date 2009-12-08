@@ -25,5 +25,12 @@ describe ERubyLanguage do
     assert @parser.parse("<%hello %>")
     assert @parser.parse("<% hello %>")
   end
+
+  context 'nested directives' do
+    refute @parser.parse("<% inner %> outer %>")
+    refute @parser.parse("<% outer <% inner %>")
+    refute @parser.parse("<% outer <% inner %> outer %>")
+    refute @parser.parse("<% outer <% inner <% atomic %> inner %> outer %>")
+  end
 end
 
