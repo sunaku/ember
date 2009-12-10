@@ -1,0 +1,25 @@
+grammar ERubyShorthandLanguage
+
+  rule shorthand
+    head tail
+    /
+    head capture tail
+    /
+    head capture ( !tail . )* tail
+  end
+
+  rule head
+    '\n'? [ \t]* '%'
+  end
+
+  rule tail
+    # !. matches the end of the input where
+    # there are no more characters to match
+    '\n' / !.
+  end
+
+  rule capture
+    [^%]
+  end
+
+end
