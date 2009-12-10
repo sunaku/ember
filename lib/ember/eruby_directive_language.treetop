@@ -3,9 +3,9 @@ grammar ERubyDirectiveLanguage
   rule directive
     head tail
     /
-    head bind tail
+    head capture tail
     /
-    head bind ( !(head bind) !(bind tail) . )* bind tail
+    head capture ( !(head capture) !(capture tail) . )* capture tail
   end
 
   rule head
@@ -16,7 +16,7 @@ grammar ERubyDirectiveLanguage
     '%>'
   end
 
-  rule bind
+  rule capture
     [^%]
   end
 
