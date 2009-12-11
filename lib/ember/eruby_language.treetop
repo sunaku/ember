@@ -1,0 +1,10 @@
+grammar ERubyLanguage
+
+  include ERubyDirectiveLanguage
+  include ERubyShorthandLanguage
+
+  rule eruby
+    ''
+  end
+
+end
