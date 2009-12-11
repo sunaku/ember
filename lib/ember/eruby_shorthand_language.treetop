@@ -1,24 +1,25 @@
 grammar ERubyShorthandLanguage
 
-  rule shorthand
-    head tail
+  rule eruby_shorthand
+    eruby_shorthand_head eruby_shorthand_tail
     /
-    head capture tail
+    eruby_shorthand_head eruby_shorthand_capture eruby_shorthand_tail
     /
-    head capture ( !tail . )* tail
+    eruby_shorthand_head eruby_shorthand_capture
+    ( !eruby_shorthand_tail . )* eruby_shorthand_tail
   end
 
-  rule head
+  rule eruby_shorthand_head
     '\n'? [ \t]* '%'
   end
 
-  rule tail
+  rule eruby_shorthand_tail
     # !. matches the end of the input where
     # there are no more characters to match
     '\n' / !.
   end
 
-  rule capture
+  rule eruby_shorthand_capture
     [^%]
   end
 

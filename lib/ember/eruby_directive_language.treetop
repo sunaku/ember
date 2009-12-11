@@ -1,22 +1,25 @@
 grammar ERubyDirectiveLanguage
 
-  rule directive
-    head tail
+  rule eruby_directive
+    eruby_directive_head eruby_directive_tail
     /
-    head capture tail
+    eruby_directive_head eruby_directive_capture eruby_directive_tail
     /
-    head capture ( !(head capture) !(capture tail) . )* capture tail
+    eruby_directive_head eruby_directive_capture (
+      !( eruby_directive_head eruby_directive_capture )
+      !( eruby_directive_capture eruby_directive_tail )
+    . )* eruby_directive_capture eruby_directive_tail
   end
 
-  rule head
+  rule eruby_directive_head
     '<%'
   end
 
-  rule tail
+  rule eruby_directive_tail
     '%>'
   end
 
-  rule capture
+  rule eruby_directive_capture
     [^%]
   end
 
