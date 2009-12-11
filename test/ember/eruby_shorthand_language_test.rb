@@ -30,4 +30,11 @@ describe ERubyShorthandLanguage do
       assert @parser.parse("%#{whitespace}%%")
     end
   end
+
+  context 'non-blank directives' do
+    assert @parser.parse("%hello")
+    assert @parser.parse("% hello")
+    assert @parser.parse("%hello ")
+    assert @parser.parse("% hello ")
+  end
 end
