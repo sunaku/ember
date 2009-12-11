@@ -5,6 +5,8 @@ require 'treetop'
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_language"
 
 describe ERubyShorthandLanguage do
+  extend WhitespaceHelper
+
   setup do
     @parser = ERubyShorthandLanguageParser.new
   end
@@ -16,5 +18,16 @@ describe ERubyShorthandLanguage do
   context 'empty directives' do
     assert @parser.parse('%')
     refute @parser.parse('%%')
+  end
+
+  context 'blank directives' do
+    each_whitespace do |whitespace|
+      assert @parser.parse("%#{whitespace}")
+      refute @parser.parse("%%#{whitespace}")
+
+      next if whitespace.empty?
+      assert @parser.parse("%#{whitespace}%")
+      assert @parser.parse("%#{whitespace}%%")
+    end
   end
 end

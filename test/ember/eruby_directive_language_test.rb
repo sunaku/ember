@@ -1,12 +1,17 @@
 require File.dirname(__FILE__) + '/../helper.rb'
-require 'inochi/util/combo'
 
 require 'treetop'
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive_language"
 
 describe ERubyDirectiveLanguage do
+  extend WhitespaceHelper
+
   setup do
     @parser = ERubyDirectiveLanguageParser.new
+  end
+
+  context 'empty input' do
+    refute @parser.parse('')
   end
 
   context 'empty directives' do
@@ -18,8 +23,7 @@ describe ERubyDirectiveLanguage do
   end
 
   context 'blank directives' do
-    [' ', "\t", "\r", "\n", "\f"].permutations do |sequence|
-      whitespace = sequence.join
+    each_whitespace do |whitespace|
       assert @parser.parse("<%#{whitespace}%>")
       refute @parser.parse("<%#{whitespace}%%>")
       refute @parser.parse("<%%#{whitespace}%>")
@@ -52,4 +56,3 @@ describe ERubyDirectiveLanguage do
     assert @parser.parse("<% outer <%% inner <%% atomic %%> inner %%> outer %>")
   end
 end
-
