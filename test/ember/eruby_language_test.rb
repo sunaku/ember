@@ -15,5 +15,9 @@ describe ERubyLanguage do
 
   context 'empty input' do
     assert @parser.parse('')
+
+    each_whitespace do |whitespace|
+      assert @parser.parse(whitespace)
+    end
   end
 end

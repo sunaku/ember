@@ -4,7 +4,11 @@ grammar ERubyLanguage
   include ERubyShorthandLanguage
 
   rule eruby
-    ''
+    eruby_content
+  end
+
+  rule eruby_content
+    ( !eruby_directive_head !eruby_shorthand_head . )*
   end
 
 end
