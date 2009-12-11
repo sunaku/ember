@@ -1,0 +1,13 @@
+grammar ERuby
+
+  include ERubyDirective
+
+  rule eruby
+    ( eruby_content eruby_directive )* eruby_content
+  end
+
+  rule eruby_content
+    ( !eruby_directive . )*
+  end
+
+end

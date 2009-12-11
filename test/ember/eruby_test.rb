@@ -2,20 +2,21 @@ require File.dirname(__FILE__) + '/../helper.rb'
 require 'inochi/util/combo'
 
 require 'treetop'
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive_language"
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_language"
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_language"
+Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_delimited_directive"
+Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_directive"
+Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive"
+Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby"
 
-describe ERubyLanguage do
-  extend WhitespaceHelper
-
+describe ERuby do
   setup do
-    @parser = ERubyLanguageParser.new
+    @parser = ERubyParser.new
   end
 
   context 'empty input' do
     assert @parser.parse('')
   end
+
+  extend WhitespaceHelper
 
   context 'just content' do
     each_whitespace do |whitespace|

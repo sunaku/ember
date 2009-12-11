@@ -1,0 +1,10 @@
+grammar ERubyDirective
+
+  include ERubyDelimitedDirective
+  include ERubyShorthandDirective
+
+  rule eruby_directive
+    eruby_delimited_directive / eruby_shorthand_directive
+  end
+
+end
