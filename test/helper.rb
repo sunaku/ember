@@ -5,7 +5,7 @@ require 'dfect/mini'
 require 'inochi/util/combo'
 module WhitespaceHelper
   def each_whitespace
-    [' ', "\t", "\r", "\n", "\f"].permutations do |sequence|
+    [' ', "\t", "\r", "\n", "\f"].shuffle.combinations do |sequence|
       yield sequence.join
     end
   end
