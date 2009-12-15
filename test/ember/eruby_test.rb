@@ -7,44 +7,44 @@ Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_directive"
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive"
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby"
 
-describe ERuby do
-  setup do
+test ERuby do
+  prepare do
     @parser = ERubyParser.new
   end
 
-  context 'empty input' do
-    assert @parser.parse('')
+  test 'empty input' do
+    aver @parser.parse('')
   end
 
   extend WhitespaceHelper
 
-  context 'just content' do
+  test 'just content' do
     each_whitespace do |whitespace|
-      assert @parser.parse(whitespace)
-      assert @parser.parse("%%#{whitespace}")
-      assert @parser.parse("<%%#{whitespace}%%>")
+      aver @parser.parse(whitespace)
+      aver @parser.parse("%%#{whitespace}")
+      aver @parser.parse("<%%#{whitespace}%%>")
     end
   end
 
-  context 'content and directives' do
-    assert @parser.parse("before <% hello %>")
-    assert @parser.parse("<% hello %> after")
-    assert @parser.parse("before <% hello %> after")
+  test 'content and directives' do
+    aver @parser.parse("before <% hello %>")
+    aver @parser.parse("<% hello %> after")
+    aver @parser.parse("before <% hello %> after")
 
     # escaped directives
-    assert @parser.parse("before <%% hello %%>")
-    assert @parser.parse("<%% hello %%> after")
-    assert @parser.parse("before <%% hello %%> after")
+    aver @parser.parse("before <%% hello %%>")
+    aver @parser.parse("<%% hello %%> after")
+    aver @parser.parse("before <%% hello %%> after")
 
     each_whitespace do |whitespace|
-      assert @parser.parse("before\n#{whitespace}% hello")
-      assert @parser.parse("#{whitespace}% hello\nafter")
-      assert @parser.parse("before\n#{whitespace}% hello\n after")
+      aver @parser.parse("before\n#{whitespace}% hello")
+      aver @parser.parse("#{whitespace}% hello\nafter")
+      aver @parser.parse("before\n#{whitespace}% hello\n after")
 
       # escaped directives
-      assert @parser.parse("before\n#{whitespace}%% hello")
-      assert @parser.parse("#{whitespace}%% hello\nafter")
-      assert @parser.parse("before\n#{whitespace}%% hello\n after")
+      aver @parser.parse("before\n#{whitespace}%% hello")
+      aver @parser.parse("#{whitespace}%% hello\nafter")
+      aver @parser.parse("before\n#{whitespace}%% hello\n after")
     end
   end
 end

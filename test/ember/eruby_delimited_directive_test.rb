@@ -3,58 +3,58 @@ require File.dirname(__FILE__) + '/../helper.rb'
 require 'treetop'
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_delimited_directive"
 
-describe ERubyDelimitedDirective do
-  setup do
+test ERubyDelimitedDirective do
+  prepare do
     @parser = ERubyDelimitedDirectiveParser.new
   end
 
   share! ERubyDelimitedDirective do
     extend WhitespaceHelper
 
-    context 'empty input' do
-      refute @parser.parse('')
+    test 'empty input' do
+      deny @parser.parse('')
     end
 
-    context 'empty directives' do
-      assert @parser.parse('<%%>')
-      refute @parser.parse('<%%%>')
-      refute @parser.parse('<%% %>')
-      refute @parser.parse('<% %%>')
-      refute @parser.parse('<%%%%>')
+    test 'empty directives' do
+      aver @parser.parse('<%%>')
+      deny @parser.parse('<%%%>')
+      deny @parser.parse('<%% %>')
+      deny @parser.parse('<% %%>')
+      deny @parser.parse('<%%%%>')
     end
 
-    context 'blank directives' do
+    test 'blank directives' do
       each_whitespace do |whitespace|
-        assert @parser.parse("<%#{whitespace}%>")
-        refute @parser.parse("<%#{whitespace}%%>")
-        refute @parser.parse("<%%#{whitespace}%>")
-        refute @parser.parse("<%%#{whitespace}%%>")
+        aver @parser.parse("<%#{whitespace}%>")
+        deny @parser.parse("<%#{whitespace}%%>")
+        deny @parser.parse("<%%#{whitespace}%>")
+        deny @parser.parse("<%%#{whitespace}%%>")
 
         next if whitespace.empty?
-        assert @parser.parse("<%#{whitespace}%#{whitespace}%>")
-        assert @parser.parse("<%#{whitespace}%%#{whitespace}%>")
+        aver @parser.parse("<%#{whitespace}%#{whitespace}%>")
+        aver @parser.parse("<%#{whitespace}%%#{whitespace}%>")
       end
     end
 
-    context 'non-blank directives' do
-      assert @parser.parse("<%hello%>")
-      assert @parser.parse("<% hello%>")
-      assert @parser.parse("<%hello %>")
-      assert @parser.parse("<% hello %>")
+    test 'non-blank directives' do
+      aver @parser.parse("<%hello%>")
+      aver @parser.parse("<% hello%>")
+      aver @parser.parse("<%hello %>")
+      aver @parser.parse("<% hello %>")
     end
 
-    context 'nested directives' do
-      refute @parser.parse("<% inner %> outer %>")
-      assert @parser.parse("<% inner %%> outer %>")
+    test 'nested directives' do
+      deny @parser.parse("<% inner %> outer %>")
+      aver @parser.parse("<% inner %%> outer %>")
 
-      refute @parser.parse("<% outer <% inner %>")
-      assert @parser.parse("<% outer <%% inner %>")
+      deny @parser.parse("<% outer <% inner %>")
+      aver @parser.parse("<% outer <%% inner %>")
 
-      refute @parser.parse("<% outer <% inner %> outer %>")
-      assert @parser.parse("<% outer <%% inner %%> outer %>")
+      deny @parser.parse("<% outer <% inner %> outer %>")
+      aver @parser.parse("<% outer <%% inner %%> outer %>")
 
-      refute @parser.parse("<% outer <% inner <% atomic %> inner %> outer %>")
-      assert @parser.parse("<% outer <%% inner <%% atomic %%> inner %%> outer %>")
+      deny @parser.parse("<% outer <% inner <% atomic %> inner %> outer %>")
+      aver @parser.parse("<% outer <%% inner <%% atomic %%> inner %%> outer %>")
     end
   end
 end

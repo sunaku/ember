@@ -4,39 +4,39 @@ require 'inochi/util/combo'
 require 'treetop'
 Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_directive"
 
-describe ERubyShorthandDirective do
-  setup do
+test ERubyShorthandDirective do
+  prepare do
     @parser = ERubyShorthandDirectiveParser.new
   end
 
   share! ERubyShorthandDirective do
     extend WhitespaceHelper
 
-    context 'empty input' do
-      refute @parser.parse('')
+    test 'empty input' do
+      deny @parser.parse('')
     end
 
-    context 'empty directives' do
-      assert @parser.parse('%')
-      refute @parser.parse('%%')
+    test 'empty directives' do
+      aver @parser.parse('%')
+      deny @parser.parse('%%')
     end
 
-    context 'blank directives' do
+    test 'blank directives' do
       each_whitespace do |whitespace|
-        assert @parser.parse("%#{whitespace}")
-        refute @parser.parse("%%#{whitespace}")
+        aver @parser.parse("%#{whitespace}")
+        deny @parser.parse("%%#{whitespace}")
 
         next if whitespace.empty?
-        assert @parser.parse("%#{whitespace}%")
-        assert @parser.parse("%#{whitespace}%%")
+        aver @parser.parse("%#{whitespace}%")
+        aver @parser.parse("%#{whitespace}%%")
       end
     end
 
-    context 'non-blank directives' do
-      assert @parser.parse("%hello")
-      assert @parser.parse("% hello")
-      assert @parser.parse("%hello ")
-      assert @parser.parse("% hello ")
+    test 'non-blank directives' do
+      aver @parser.parse("%hello")
+      aver @parser.parse("% hello")
+      aver @parser.parse("%hello ")
+      aver @parser.parse("% hello ")
     end
   end
 end
