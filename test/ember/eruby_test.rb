@@ -35,9 +35,14 @@ D ERuby do
       [ERubyContent, " after"]
 
     # escaped directives
-    T @parser.parse("before <%% hello %%>")
-    T @parser.parse("<%% hello %%> after")
-    T @parser.parse("before <%% hello %%> after")
+    parse "before <%% hello %%>",
+      [ERubyContent, "before <%% hello %%>"]
+
+    parse "<%% hello %%> after",
+      [ERubyContent, "<%% hello %%> after"]
+
+    parse "before <%% hello %%> after",
+      [ERubyContent, "before <%% hello %%> after"]
 
     each_whitespace do |whitespace|
       T @parser.parse("before\n#{whitespace}% hello")

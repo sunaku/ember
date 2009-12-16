@@ -15,7 +15,7 @@ grammar ERubyShorthandDirective
   end
 
   rule eruby_shorthand_directive_head
-    '\n'? [ \t]* '%'
+    '%'
   end
 
   rule eruby_shorthand_directive_tail

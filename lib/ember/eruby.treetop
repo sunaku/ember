@@ -3,11 +3,17 @@ grammar ERuby
   include ERubyDirective
 
   rule eruby
-    ( eruby_content eruby_directive )* eruby_content <ERubyDocument>
+    eruby_directive_at_start_of_input?
+    ( eruby_content eruby_directive_after_start_of_input )*
+    eruby_content
+
+    <ERubyDocument>
   end
 
   rule eruby_content
-    ( !eruby_directive . )* <ERubyContent>
+    ( !eruby_directive_after_start_of_input . )*
+
+    <ERubyContent>
   end
 
 end
