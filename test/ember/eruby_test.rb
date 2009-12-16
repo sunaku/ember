@@ -21,9 +21,18 @@ D ERuby do
   end
 
   D 'content and directives' do
-    T @parser.parse("before <% hello %>")
-    T @parser.parse("<% hello %> after")
-    T @parser.parse("before <% hello %> after")
+    parse "before <% hello %>",
+      [ERubyContent, "before "],
+      [ERubyDirective, "<% hello %>"]
+
+    parse "<% hello %> after",
+      [ERubyDirective, "<% hello %>"],
+      [ERubyContent, " after"]
+
+    parse "before <% hello %> after",
+      [ERubyContent, "before "],
+      [ERubyDirective, "<% hello %>"],
+      [ERubyContent, " after"]
 
     # escaped directives
     T @parser.parse("before <%% hello %%>")
@@ -40,5 +49,19 @@ D ERuby do
       T @parser.parse("#{whitespace}%% hello\nafter")
       T @parser.parse("before\n#{whitespace}%% hello\n after")
     end
+  end
+
+  def parse input, *expected_sequence
+    tree = @parser.parse(input)
+    list = tree.to_a
+
+    expected_sequence.each do |expected_node, expected_text|
+      node = list.shift
+
+      T { node.kind_of? expected_node }
+      T { node.text_value == expected_text }
+    end
+
+    tree
   end
 end
