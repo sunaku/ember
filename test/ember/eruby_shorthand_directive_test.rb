@@ -1,8 +1,5 @@
-require File.dirname(__FILE__) + '/../helper.rb'
-require 'inochi/util/combo'
-
-require 'treetop'
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_directive"
+require 'test_helper'
+require 'ember/eruby_shorthand_directive'
 
 D ERubyShorthandDirective do
   D.< do

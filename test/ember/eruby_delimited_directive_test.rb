@@ -1,7 +1,5 @@
-require File.dirname(__FILE__) + '/../helper.rb'
-
-require 'treetop'
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_delimited_directive"
+require 'test_helper'
+require 'ember/eruby_delimited_directive'
 
 D ERubyDelimitedDirective do
   D.< do

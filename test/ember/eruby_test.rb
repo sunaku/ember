@@ -1,11 +1,5 @@
-require File.dirname(__FILE__) + '/../helper.rb'
-require 'inochi/util/combo'
-
-require 'treetop'
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_delimited_directive"
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_shorthand_directive"
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby_directive"
-Treetop.load "#{Ember::LIBRARY_DIR}/ember/eruby"
+require 'test_helper'
+require 'ember/eruby'
 
 D ERuby do
   D.< do
@@ -18,7 +12,7 @@ D ERuby do
 
   extend WhitespaceHelper
 
-  D 'just content' do
+  D 'content only' do
     each_whitespace do |whitespace|
       T @parser.parse(whitespace)
       T @parser.parse("%%#{whitespace}")
