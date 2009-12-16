@@ -4,7 +4,7 @@ grammar ERubyDirective
   include ERubyShorthandDirective
 
   rule eruby_directive
-    eruby_delimited_directive / eruby_shorthand_directive
+    ( eruby_delimited_directive / eruby_shorthand_directive ) <ERubyDirective>
   end
 
 end

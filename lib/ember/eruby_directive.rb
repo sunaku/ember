@@ -3,3 +3,6 @@ require 'ember/eruby_shorthand_directive'
 
 require 'treetop'
 Treetop.load __FILE__.sub(/rb$/, 'treetop')
+
+module ERubyDirective
+end
