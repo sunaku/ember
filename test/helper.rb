@@ -3,8 +3,6 @@ $LOAD_PATH << test_dir
 require Dir[test_dir + '/../lib/*.rb'].first
 
 require 'dfect/auto'
-require 'dfect/mini'
-require 'dfect/nice'
 
 require 'inochi/util/combo'
 module WhitespaceHelper
