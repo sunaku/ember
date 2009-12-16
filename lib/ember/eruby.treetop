@@ -4,14 +4,14 @@ grammar ERuby
 
   rule eruby
     eruby_directive_at_start_of_input?
-    ( eruby_content eruby_directive_after_start_of_input )*
-    eruby_content
+    ( eruby_content? eruby_directive_after_start_of_input )*
+    eruby_content?
 
     <ERubyDocument>
   end
 
   rule eruby_content
-    ( !eruby_directive_after_start_of_input . )*
+    ( !eruby_directive_after_start_of_input . )+
 
     <ERubyContent>
   end

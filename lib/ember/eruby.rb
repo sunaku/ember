@@ -13,7 +13,7 @@ module ERubyDocument
 
     visitor = lambda do |node|
       if node.kind_of? ERubyContent or node.kind_of? ERubyDirective
-        list << node unless node.text_value.empty?
+        list << node
         next # do not visit the children of this nonterminal
       end
 
