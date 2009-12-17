@@ -45,7 +45,10 @@ D ERuby do
       [ERubyContent, "before <%% hello %%> after"]
 
     each_whitespace do |whitespace|
-      T @parser.parse("before\n#{whitespace}% hello")
+      parse "before#{whitespace}\n% hello",
+        [ERubyContent, "before#{whitespace}\n"],
+        [ERubyDirective, "% hello"]
+
       T @parser.parse("#{whitespace}% hello\nafter")
       T @parser.parse("before\n#{whitespace}% hello\n after")
 
