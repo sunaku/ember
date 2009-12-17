@@ -19,13 +19,13 @@ D ERubyShorthandDirective do
     end
 
     D 'blank directives' do
-      each_whitespace do |whitespace|
-        T @parser.parse("%#{whitespace}")
-        F @parser.parse("%%#{whitespace}")
+      each_space do |space|
+        T @parser.parse("%#{space}")
+        F @parser.parse("%%#{space}")
 
-        next if whitespace.empty?
-        T @parser.parse("%#{whitespace}%")
-        T @parser.parse("%#{whitespace}%%")
+        next if space.empty?
+        T @parser.parse("%#{space}%")
+        T @parser.parse("%#{space}%%")
       end
     end
 
