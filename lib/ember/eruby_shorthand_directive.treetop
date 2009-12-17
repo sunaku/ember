@@ -1,17 +1,20 @@
 grammar ERubyShorthandDirective
 
   rule eruby_shorthand_directive
-    eruby_shorthand_directive_head
-    eruby_shorthand_directive_tail
-    /
-    eruby_shorthand_directive_head
-    eruby_shorthand_directive_capture
-    eruby_shorthand_directive_tail
-    /
-    eruby_shorthand_directive_head
-    eruby_shorthand_directive_capture
-    ( !eruby_shorthand_directive_tail . )*
-    eruby_shorthand_directive_tail
+    (
+      eruby_shorthand_directive_head
+      eruby_shorthand_directive_tail
+      /
+      eruby_shorthand_directive_head
+      eruby_shorthand_directive_capture
+      eruby_shorthand_directive_tail
+      /
+      eruby_shorthand_directive_head
+      eruby_shorthand_directive_capture
+      ( !"\n" . )*
+      eruby_shorthand_directive_tail
+    )
+    <ERubyDirective>
   end
 
   rule eruby_shorthand_directive_head

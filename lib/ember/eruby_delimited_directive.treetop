@@ -1,22 +1,25 @@
 grammar ERubyDelimitedDirective
 
   rule eruby_delimited_directive
-    eruby_delimited_directive_head
-    eruby_delimited_directive_tail
-    /
-    eruby_delimited_directive_head
-    eruby_delimited_directive_capture
-    eruby_delimited_directive_tail
-    /
-    eruby_delimited_directive_head
-    eruby_delimited_directive_capture
     (
-      !( eruby_delimited_directive_head eruby_delimited_directive_capture )
-      !( eruby_delimited_directive_capture eruby_delimited_directive_tail )
-      .
-    )*
-    eruby_delimited_directive_capture
-    eruby_delimited_directive_tail
+      eruby_delimited_directive_head
+      eruby_delimited_directive_tail
+      /
+      eruby_delimited_directive_head
+      eruby_delimited_directive_capture
+      eruby_delimited_directive_tail
+      /
+      eruby_delimited_directive_head
+      eruby_delimited_directive_capture
+      (
+        !( eruby_delimited_directive_head eruby_delimited_directive_capture )
+        !( eruby_delimited_directive_capture eruby_delimited_directive_tail )
+        .
+      )*
+      eruby_delimited_directive_capture
+      eruby_delimited_directive_tail
+    )
+    <ERubyDirective>
   end
 
   rule eruby_delimited_directive_head

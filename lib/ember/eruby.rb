@@ -14,10 +14,7 @@ module ERubyDocument
     visitor = lambda do |node|
       if node.kind_of? ERubyContent or node.kind_of? ERubyDirective
         list << node
-        next # do not visit the children of this nonterminal
-      end
-
-      if node.nonterminal?
+      elsif node.nonterminal?
         node.elements.each(&visitor)
       end
     end

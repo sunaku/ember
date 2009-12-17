@@ -1,17 +1,39 @@
 grammar ERuby
 
-  include ERubyDirective
+  include ERubyDelimitedDirective
+  include ERubyShorthandDirective
 
   rule eruby
-    eruby_directive_at_start_of_input?
-    ( eruby_content? eruby_directive_after_start_of_input )*
-    eruby_content?
+    # we start with the shorthand directive because it
+    # is allowed to occur at the beginning of the input
+    eruby_shorthand_directive?
+
+    # followed by the normal sequence
+    # of eRuby directives and content
+    ( eruby_directive / eruby_content )*
 
     <ERubyDocument>
   end
 
   rule eruby_content
-    ( !eruby_directive_after_start_of_input . )+
+    ( !eruby_directive . )+
+
+    <ERubyContent>
+  end
+
+  rule eruby_directive
+    eruby_shorthand_directive_beyond_start_of_input
+    /
+    eruby_delimited_directive
+  end
+
+  rule eruby_shorthand_directive_beyond_start_of_input
+    eruby_content_before_shorthand_directive_beyond_start_of_input
+    eruby_shorthand_directive
+  end
+
+  rule eruby_content_before_shorthand_directive_beyond_start_of_input
+    "\n" [ \t]* &eruby_shorthand_directive
 
     <ERubyContent>
   end

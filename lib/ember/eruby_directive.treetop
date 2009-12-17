@@ -3,20 +3,8 @@ grammar ERubyDirective
   include ERubyDelimitedDirective
   include ERubyShorthandDirective
 
-  # there is no newline before the eruby_shorthand_directive
-  # because we are matching it at the *start* of the input
-  rule eruby_directive_at_start_of_input
-    ( eruby_shorthand_directive / eruby_delimited_directive )
-
-    <ERubyDirective>
-  end
-
-  # there is a newline before the eruby_shorthand_directive
-  # because we are matching it *after* the start of the input
-  rule eruby_directive_after_start_of_input
-    ( "\n" eruby_shorthand_directive / eruby_delimited_directive )
-
-    <ERubyDirective>
+  rule eruby_directive
+    eruby_shorthand_directive / eruby_delimited_directive
   end
 
 end
