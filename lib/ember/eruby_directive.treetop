@@ -14,7 +14,7 @@ grammar ERubyDirective
   # there is a newline before the eruby_shorthand_directive
   # because we are matching it *after* the start of the input
   rule eruby_directive_after_start_of_input
-    ( '\n' eruby_shorthand_directive / eruby_delimited_directive )
+    ( "\n" eruby_shorthand_directive / eruby_delimited_directive )
 
     <ERubyDirective>
   end

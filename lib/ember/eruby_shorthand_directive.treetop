@@ -21,7 +21,7 @@ grammar ERubyShorthandDirective
   rule eruby_shorthand_directive_tail
     # !. matches the end of the input where
     # there are no more characters to match
-    '\n' / !.
+    "\n" / !.
   end
 
   rule eruby_shorthand_directive_capture
