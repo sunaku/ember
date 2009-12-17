@@ -49,13 +49,31 @@ D ERuby do
         [ERubyContent, "before#{whitespace}\n"],
         [ERubyDirective, "% hello"]
 
-      T @parser.parse("#{whitespace}% hello\nafter")
-      T @parser.parse("before\n#{whitespace}% hello\n after")
+      parse "% hello\n#{whitespace}after",
+        [ERubyDirective, "% hello\n"],
+        [ERubyContent, "#{whitespace}after"]
+
+      parse "#{whitespace}\n% hello\n after",
+        [ERubyContent, "#{whitespace}\n"],
+        [ERubyDirective, "% hello\n"],
+        [ERubyContent, " after"]
+
+      parse "before\n#{whitespace}\n% hello\n#{whitespace}after",
+        [ERubyContent, "before\n#{whitespace}\n"],
+        [ERubyDirective, "% hello\n"],
+        [ERubyContent, "#{whitespace}after"]
 
       # escaped directives
-      T @parser.parse("before\n#{whitespace}%% hello")
-      T @parser.parse("#{whitespace}%% hello\nafter")
-      T @parser.parse("before\n#{whitespace}%% hello\n after")
+      [nil, "\n"].each do |newline| # newline before '%' should not matter
+        parse "before\n#{whitespace}#{newline}%% hello",
+          [ERubyContent, "before\n#{whitespace}#{newline}%% hello"]
+
+        parse "#{whitespace}#{newline}%% hello\nafter",
+          [ERubyContent, "#{whitespace}#{newline}%% hello\nafter"]
+
+        parse "before\n#{whitespace}#{newline}%% hello\n after",
+          [ERubyContent, "before\n#{whitespace}#{newline}%% hello\n after"]
+      end
     end
   end
 
