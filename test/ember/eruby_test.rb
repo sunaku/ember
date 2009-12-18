@@ -23,15 +23,15 @@ D ERuby do
   D 'content and directives' do
     parse "before <% hello %>",
       [ERubyContent, "before "],
-      [ERubyDirective, "<% hello %>"]
+      [ERubyDirective, " hello "]
 
     parse "<% hello %> after",
-      [ERubyDirective, "<% hello %>"],
+      [ERubyDirective, " hello "],
       [ERubyContent, " after"]
 
     parse "before <% hello %> after",
       [ERubyContent, "before "],
-      [ERubyDirective, "<% hello %>"],
+      [ERubyDirective, " hello "],
       [ERubyContent, " after"]
 
     # escaped directives
@@ -47,20 +47,20 @@ D ERuby do
     each_whitespace do |whitespace|
       parse "before#{whitespace}\n% hello",
         [ERubyContent, "before#{whitespace}\n"],
-        [ERubyDirective, "% hello"]
+        [ERubyDirective, " hello"]
 
       parse "% hello\n#{whitespace}after",
-        [ERubyDirective, "% hello\n"],
+        [ERubyDirective, " hello"],
         [ERubyContent, "#{whitespace}after"]
 
       parse "#{whitespace}\n% hello\n after",
         [ERubyContent, "#{whitespace}\n"],
-        [ERubyDirective, "% hello\n"],
+        [ERubyDirective, " hello"],
         [ERubyContent, " after"]
 
       parse "before\n#{whitespace}\n% hello\n#{whitespace}after",
         [ERubyContent, "before\n#{whitespace}\n"],
-        [ERubyDirective, "% hello\n"],
+        [ERubyDirective, " hello"],
         [ERubyContent, "#{whitespace}after"]
 
       # escaped directives
