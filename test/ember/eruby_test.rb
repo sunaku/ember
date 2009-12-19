@@ -51,17 +51,17 @@ D ERuby do
 
       parse "% hello\n#{whitespace}after",
         [ERubyDirective, " hello"],
-        [ERubyContent, "#{whitespace}after"]
+        [ERubyContent, "\n#{whitespace}after"]
 
       parse "#{whitespace}\n% hello\n after",
         [ERubyContent, "#{whitespace}\n"],
         [ERubyDirective, " hello"],
-        [ERubyContent, " after"]
+        [ERubyContent, "\n after"]
 
       parse "before\n#{whitespace}\n% hello\n#{whitespace}after",
         [ERubyContent, "before\n#{whitespace}\n"],
         [ERubyDirective, " hello"],
-        [ERubyContent, "#{whitespace}after"]
+        [ERubyContent, "\n#{whitespace}after"]
 
       # escaped directives
       [nil, "\n"].each do |newline| # newline before '%' should not matter
