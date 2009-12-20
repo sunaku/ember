@@ -89,6 +89,18 @@ D ERuby do
       [ERubyContent, "\nb"]
   end
 
+  D 'assignment directives' do
+    parse "a<%= hello %>b",
+      [ERubyContent, "a"],
+      [ERubyDirective, "= hello ", :assign?],
+      [ERubyContent, "b"]
+
+    parse "a\n%= hello \nb",
+      [ERubyContent, "a\n"],
+      [ERubyDirective, "= hello ", :assign?],
+      [ERubyContent, "\nb"]
+  end
+
   def parse input, *expected_sequence
     tree = @parser.parse(input)
     list = tree.to_a
