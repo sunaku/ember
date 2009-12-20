@@ -1,9 +1,7 @@
-require 'ember/eruby_directive'
+require 'ember/eruby_content_node'
+require 'ember/eruby_directive_node'
 
-require 'treetop'
-Treetop.load __FILE__.sub(/rb$/, 'treetop')
-
-module ERubyDocument
+module ERubyTemplateNode
   ##
   # Returns an array of all content and directive nodes, in the
   # order that they occur in the input, from this parse tree.
@@ -12,10 +10,10 @@ module ERubyDocument
     list = []
 
     visitor = lambda do |node|
-      if node.kind_of? ERubyContent or node.kind_of? ERubyDirective
+      if node.kind_of? ERubyContentNode or node.kind_of? ERubyDirectiveNode
 
         # collapse adjacent content nodes into a single one
-        if node.kind_of? ERubyContent
+        if node.kind_of? ERubyContentNode
 
           # make the text_value field appendable
           content = node.text_value
@@ -26,7 +24,7 @@ module ERubyDocument
           node.text_value = content
 
           # combine their content
-          if prev_node = list.last and prev_node.kind_of? ERubyContent
+          if prev_node = list.last and prev_node.kind_of? ERubyContentNode
             prev_node.text_value << node.text_value
           else
             list << node
@@ -45,7 +43,4 @@ module ERubyDocument
 
     list
   end
-end
-
-module ERubyContent
 end

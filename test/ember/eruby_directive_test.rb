@@ -1,5 +1,5 @@
 require 'test_helper'
-require 'ember/eruby_directive'
+require 'ember/eruby_directive_parser'
 require 'ember/eruby_delimited_directive_test'
 require 'ember/eruby_shorthand_directive_test'
 

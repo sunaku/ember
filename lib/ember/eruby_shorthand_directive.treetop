@@ -13,13 +13,13 @@ grammar ERubyShorthandDirective
   rule eruby_shorthand_directive_body
     eruby_shorthand_directive_capture ( !"\n" . )*
 
-    <ERubyDirective>
+    <ERubyShorthandDirectiveNode>
   end
 
   rule eruby_shorthand_directive_tail
     # !. matches the end of the input where
     # there are no more characters to match
-    "\n" <ERubyContent> / !.
+    "\n" <ERubyContentNode> / !.
   end
 
   rule eruby_shorthand_directive_capture

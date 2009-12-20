@@ -12,13 +12,13 @@ grammar ERuby
     # of eRuby directives and content
     ( eruby_directive / eruby_content )*
 
-    <ERubyDocument>
+    <ERubyTemplateNode>
   end
 
   rule eruby_content
     ( !eruby_directive . )+
 
-    <ERubyContent>
+    <ERubyContentNode>
   end
 
   rule eruby_directive
@@ -35,7 +35,7 @@ grammar ERuby
   rule eruby_content_before_shorthand_directive_beyond_start_of_input
     "\n" [ \t]* &eruby_shorthand_directive
 
-    <ERubyContent>
+    <ERubyContentNode>
   end
 
 end

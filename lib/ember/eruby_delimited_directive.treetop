@@ -20,7 +20,7 @@ grammar ERubyDelimitedDirective
       )*
       eruby_delimited_directive_capture
     )?
-    <ERubyDirective>
+    <ERubyDelimitedDirectiveNode>
   end
 
   rule eruby_delimited_directive_tail

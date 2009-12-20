@@ -1,5 +1,5 @@
 require 'test_helper'
-require 'ember/eruby_delimited_directive'
+require 'ember/eruby_delimited_directive_parser'
 
 D ERubyDelimitedDirective do
   D.< do

@@ -1,5 +1,5 @@
 require 'test_helper'
-require 'ember/eruby_shorthand_directive'
+require 'ember/eruby_shorthand_directive_parser'
 
 D ERubyShorthandDirective do
   D.< do
