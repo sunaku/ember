@@ -1,9 +1,9 @@
-grammar ERuby
+grammar ERubyTemplate
 
   include ERubyDelimitedDirective
   include ERubyShorthandDirective
 
-  rule eruby
+  rule eruby_template
     # we start with the shorthand directive because it
     # is allowed to occur at the beginning of the input
     eruby_shorthand_directive?

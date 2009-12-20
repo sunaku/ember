@@ -1,9 +1,9 @@
 require 'test_helper'
-require 'ember/eruby_parser'
+require 'ember/eruby_template_parser'
 
-D ERuby do
+D ERubyTemplate do
   D.< do
-    @parser = ERubyParser.new
+    @parser = ERubyTemplateParser.new
   end
 
   D 'empty input' do
