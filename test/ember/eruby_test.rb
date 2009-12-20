@@ -77,15 +77,31 @@ D ERuby do
     end
   end
 
+  D 'comment directives' do
+    parse "a<%# hello %>b",
+      [ERubyContent, "a"],
+      [ERubyDirective, "# hello ", :comment?],
+      [ERubyContent, "b"]
+
+    parse "a\n%# hello \nb",
+      [ERubyContent, "a\n"],
+      [ERubyDirective, "# hello ", :comment?],
+      [ERubyContent, "\nb"]
+  end
+
   def parse input, *expected_sequence
     tree = @parser.parse(input)
     list = tree.to_a
 
-    expected_sequence.each do |expected_node, expected_text|
+    expected_sequence.each do |expected_class, expected_text, *expected_atts|
       node = list.shift
 
-      T { node.kind_of? expected_node }
+      T { node.kind_of? expected_class }
       T { node.text_value == expected_text }
+
+      expected_atts.each do |expected_attr|
+        T { node.__send__(expected_attr) }
+      end
     end
 
     tree
