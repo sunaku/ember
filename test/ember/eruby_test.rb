@@ -109,17 +109,22 @@ D ERuby do
     parse "<%= hello -%>",
       [ERubyDirectiveNode, "= hello -", :assign?, :chomp?]
 
-    # not present in the official eRuby language
-    parse "%= hello -",
-      [ERubyDirectiveNode, "= hello -", :assign?, :chomp?]
+    tree, list =
+      parse "%= hello -", # not present in official eRuby language spec
+        [ERubyDirectiveNode, "= hello -", :assign?, :shorthand?]
+
+    node = list.first
+    F { node.chomp? }
   end
 
   def parse input, *expected_sequence
     tree = @parser.parse(input)
     list = tree.to_a
 
+    i = 0
     expected_sequence.each do |expected_class, expected_text, *expected_atts|
-      node = list.shift
+      node = list[i]
+      i += 1
 
       T { node.kind_of? expected_class }
       T { node.text_value == expected_text }
@@ -129,6 +134,6 @@ D ERuby do
       end
     end
 
-    tree
+    [tree, list]
   end
 end
