@@ -101,6 +101,19 @@ D ERuby do
       [ERubyContent, "\nb"]
   end
 
+  D 'chomping directives' do
+    parse "a<%= hello -%>b",
+      [ERubyContent, "a"],
+      [ERubyDirective, "= hello -", :assign?, :chomp?],
+      [ERubyContent, "b"]
+
+    # not present in the official eRuby language
+    parse "a\n%= hello -\nb",
+      [ERubyContent, "a\n"],
+      [ERubyDirective, "= hello -", :assign?, :chomp?],
+      [ERubyContent, "\nb"]
+  end
+
   def parse input, *expected_sequence
     tree = @parser.parse(input)
     list = tree.to_a

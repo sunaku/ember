@@ -12,4 +12,8 @@ module ERubyDirective
   def assign?
     text_value =~ /\A=/
   end
+
+  def chomp?
+    text_value =~ /-\z/
+  end
 end
