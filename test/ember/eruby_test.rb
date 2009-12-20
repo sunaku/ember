@@ -23,15 +23,15 @@ D ERuby do
   D 'content and directives' do
     parse "before <% hello %>",
       [ERubyContentNode, "before "],
-      [ERubyDirectiveNode, " hello "]
+      [ERubyDelimitedDirectiveNode, " hello "]
 
     parse "<% hello %> after",
-      [ERubyDirectiveNode, " hello "],
+      [ERubyDelimitedDirectiveNode, " hello "],
       [ERubyContentNode, " after"]
 
     parse "before <% hello %> after",
       [ERubyContentNode, "before "],
-      [ERubyDirectiveNode, " hello "],
+      [ERubyDelimitedDirectiveNode, " hello "],
       [ERubyContentNode, " after"]
 
     # escaped directives
@@ -47,20 +47,20 @@ D ERuby do
     each_whitespace do |whitespace|
       parse "before#{whitespace}\n% hello",
         [ERubyContentNode, "before#{whitespace}\n"],
-        [ERubyDirectiveNode, " hello"]
+        [ERubyShorthandDirectiveNode, " hello"]
 
       parse "% hello\n#{whitespace}after",
-        [ERubyDirectiveNode, " hello"],
+        [ERubyShorthandDirectiveNode, " hello"],
         [ERubyContentNode, "\n#{whitespace}after"]
 
       parse "#{whitespace}\n% hello\n after",
         [ERubyContentNode, "#{whitespace}\n"],
-        [ERubyDirectiveNode, " hello"],
+        [ERubyShorthandDirectiveNode, " hello"],
         [ERubyContentNode, "\n after"]
 
       parse "before\n#{whitespace}\n% hello\n#{whitespace}after",
         [ERubyContentNode, "before\n#{whitespace}\n"],
-        [ERubyDirectiveNode, " hello"],
+        [ERubyShorthandDirectiveNode, " hello"],
         [ERubyContentNode, "\n#{whitespace}after"]
 
       # escaped directives
@@ -77,41 +77,41 @@ D ERuby do
     end
   end
 
-  D 'comment directives' do
-    parse "a<%# hello %>b",
+  D 'generic directives' do
+    parse "a<% hello %>b",
       [ERubyContentNode, "a"],
-      [ERubyDirectiveNode, "# hello ", :comment?],
+      [ERubyDirectiveNode, " hello ", :delimited?],
       [ERubyContentNode, "b"]
 
-    parse "a\n%# hello \nb",
+    parse "a\n% hello \nb",
       [ERubyContentNode, "a\n"],
-      [ERubyDirectiveNode, "# hello ", :comment?],
+      [ERubyDirectiveNode, " hello ", :shorthand?],
       [ERubyContentNode, "\nb"]
+  end
+
+  D 'comment directives' do
+    parse "<%# hello %>",
+      [ERubyDirectiveNode, "# hello ", :comment?]
+
+    parse "%# hello ",
+      [ERubyDirectiveNode, "# hello ", :comment?]
   end
 
   D 'assignment directives' do
-    parse "a<%= hello %>b",
-      [ERubyContentNode, "a"],
-      [ERubyDirectiveNode, "= hello ", :assign?],
-      [ERubyContentNode, "b"]
+    parse "<%= hello %>",
+      [ERubyDirectiveNode, "= hello ", :assign?]
 
-    parse "a\n%= hello \nb",
-      [ERubyContentNode, "a\n"],
-      [ERubyDirectiveNode, "= hello ", :assign?],
-      [ERubyContentNode, "\nb"]
+    parse "%= hello ",
+      [ERubyDirectiveNode, "= hello ", :assign?]
   end
 
   D 'chomping directives' do
-    parse "a<%= hello -%>b",
-      [ERubyContentNode, "a"],
-      [ERubyDirectiveNode, "= hello -", :assign?, :chomp?],
-      [ERubyContentNode, "b"]
+    parse "<%= hello -%>",
+      [ERubyDirectiveNode, "= hello -", :assign?, :chomp?]
 
     # not present in the official eRuby language
-    parse "a\n%= hello -\nb",
-      [ERubyContentNode, "a\n"],
-      [ERubyDirectiveNode, "= hello -", :assign?, :chomp?],
-      [ERubyContentNode, "\nb"]
+    parse "%= hello -",
+      [ERubyDirectiveNode, "= hello -", :assign?, :chomp?]
   end
 
   def parse input, *expected_sequence
