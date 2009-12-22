@@ -12,24 +12,22 @@ module ERubyTemplateNode
     visitor = lambda do |node|
       if node.kind_of? ERubyContentNode or node.kind_of? ERubyDirectiveNode
 
+        # make the SyntaxNode#text_value field appendable
+        text_value = node.text_value
+
+        class << node
+          undef text_value
+          attr_accessor :text_value
+        end
+
+        node.text_value = text_value
+
         # collapse adjacent content nodes into a single one
-        if node.kind_of? ERubyContentNode
-
-          # make the text_value field appendable
-          content = node.text_value
-          class << node
-            undef text_value
-            attr_accessor :text_value
-          end
-          node.text_value = content
-
-          # combine their content
-          if prev_node = list.last and prev_node.kind_of? ERubyContentNode
-            prev_node.text_value << node.text_value
-          else
-            list << node
-          end
-
+        if node.kind_of? ERubyContentNode and
+           prev_node = list.last and
+           prev_node.kind_of? ERubyContentNode
+        then
+          prev_node.text_value << node.text_value
         else
           list << node
         end
