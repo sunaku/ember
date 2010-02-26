@@ -131,30 +131,40 @@ module Ember
       end
     end
 
-
     private
 
-    OPERATION_EVAL_EXPRESSION      = '='
-    OPERATION_COMMENT_LINE         = '#'
-    OPERATION_BEGIN_LAMBDA         = '|'
-    OPERATION_EVAL_TEMPLATE_FILE   = '+'
-    OPERATION_EVAL_TEMPLATE_STRING = '~'
-    OPERATION_INSERT_PLAIN_FILE    = '<'
+    OPERATION_EXECUTE     = ' '.freeze
+    OPERATION_EVALUATE    = '='.freeze
+    OPERATION_COMMENT     = '#'.freeze
+    OPERATION_BLOCK       = '|'.freeze
+    OPERATION_NEST_FILE   = '+'.freeze
+    OPERATION_NEST_STRING = '*'.freeze
+    OPERATION_READ_FILE   = '<'.freeze
+
+    OPERATION_BY_TOKEN = {
+      '#' => :comment,
+      '=' => :expression,
+      ' ' => :code,
+      '|' => :begin_block,
+      '+' => :nest_file,
+      '*' => :nest_string,
+      '<' => :read_file,
+    }
 
     #:stopdoc:
 
     OPERATIONS            = [
-                              OPERATION_COMMENT_LINE,
-                              OPERATION_BEGIN_LAMBDA,
-                              OPERATION_EVAL_EXPRESSION,
-                              OPERATION_EVAL_TEMPLATE_FILE,
-                              OPERATION_EVAL_TEMPLATE_STRING,
-                              OPERATION_INSERT_PLAIN_FILE,
+                              OPERATION_COMMENT,
+                              OPERATION_BLOCK,
+                              OPERATION_EVALUATE,
+                              OPERATION_NEST_FILE,
+                              OPERATION_NEST_STRING,
+                              OPERATION_READ_FILE,
                             ]
 
     SILENT_OPERATIONS     = [
-                              OPERATION_COMMENT_LINE,
-                              OPERATION_BEGIN_LAMBDA,
+                              OPERATION_COMMENT,
+                              OPERATION_BLOCK,
                             ]
 
     VOCAL_OPERATIONS      = OPERATIONS - SILENT_OPERATIONS
@@ -218,55 +228,105 @@ module Ember
       )
 
       # convert "% at beginning of line" usage into <% normal %> usage
-        if @options[:shorthand]
-          i = 0
-          contents, directives =
-            template.split(/(#{DIRECTIVE_HEAD}#{DIRECTIVE_BODY}#{DIRECTIVE_TAIL})/mo).
-            partition { (i += 1) & 1 == 1 } # even/odd partition
+        # if @options[:shorthand]
+        #   i = 0
+        #   contents, directives =
+        #     template.split(/(#{DIRECTIVE_HEAD}#{DIRECTIVE_BODY}#{DIRECTIVE_TAIL})/mo).
+        #     partition { (i += 1) & 1 == 1 } # even/odd partition
 
-          # only process the content; do not touch the directives
-          # because they may contain code lines beginning with "%"
-          contents.each do |content|
-            # process unescaped directives
-            content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD}#{SHORTHAND_BODY})#{SHORTHAND_TAIL}/o, '\1<\2%>'
+        #   # only process the content; do not touch the directives
+        #   # because they may contain code lines beginning with "%"
+        #   contents.each do |content|
+        #     # process unescaped directives
+        #     content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD}#{SHORTHAND_BODY})#{SHORTHAND_TAIL}/o, '\1<\2%>'
 
-            # unescape escaped directives
-            content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD})#{SHORTHAND_HEAD}/o, '\1\2'
-          end
+        #     # unescape escaped directives
+        #     content.gsub! %r/^(#{SPACING})(#{SHORTHAND_HEAD})#{SHORTHAND_HEAD}/o, '\1\2'
+        #   end
 
-          template = contents.zip(directives).join
-        end
+        #   template = contents.zip(directives).join
+        # end
 
       # translate template into Ruby code
         @margins = []
         @crowns  = []
 
-        directive_matches = template.scan(/#{
-          '((%s)%s(%s)%s(%s)(%s?))' % [
-            SPACING,
-            DIRECTIVE_HEAD,
-            DIRECTIVE_BODY,
-            DIRECTIVE_TAIL,
-            SPACING,
-            NEWLINE,
-          ]
-        }/mo)
+        require 'ember/eruby_template_parser'
+        parser = ERubyTemplateParser.new
+        tree = parser.parse(template)
+        list = tree.to_a
 
-        directive_matches.each do |match|
-          # iteratively whittle the template
-          before_content, after_content = template.split(match[0], 2)
-          template = after_content
+        prev_node = nil
+        list.each do |node|
 
-          # process the raw content before the directive
-          process_content before_content
+          if node.kind_of? ERubyContentNode
+            lines = node.text_value.split(/^/)
 
-          # process the directive itself
-          args = match + [after_content]
-          process_directive(*args)
+            if prev_node
+              raise unless prev_node.kind_of? ERubyDirectiveNode
+
+              # do not emit blanks and newline after directive
+              # this is like the chomp option always being ON
+              if after = lines.first and after =~ /\A[[:blank:]]*\n\z/
+                lines.shift
+                @program.new_line!
+              end
+            end
+
+            lines.each do |line|
+              @program.emit_text line
+              @program.new_line! if line =~ /\n\z/
+            end
+
+          else
+            raise unless node.kind_of? ERubyDirectiveNode
+
+            # if prev_node and prev_node.kind_of? ERubyContentNode
+            #   prev_node.
+            # end
+
+            directive_body = node.text_value
+            operation = OPERATION_BY_TOKEN[directive_body[0,1]]
+            operand = directive_body[1..-1]
+
+            template_class_name  = "::#{self.class.name}"
+            nested_template_args = "(#{operand}), #{@options.inspect}"
+            nest_template_with = lambda do |meth|
+              @program.emit_code "#{template_class_name}.#{meth}(#{
+                nested_template_args
+              }.merge!(:continue_result => true)).render(nil, #{@render_context_id.inspect})"
+            end
+
+            case operation
+            when :comment
+              @program.emit_code operand.gsub(/\S/, ' ')
+
+            when :expression
+              @program.emit_expr operand
+
+            when :code
+              @program.emit_code operand
+
+            when :begin_block
+              operand =~ /(\bdo\b)?\s*(\|[^\|]*\|)?\s*\z/
+              @program.emit_code "#{$`} #{$1 || 'do'} #{$2}"
+
+            when :nest_file
+              nest_template_with.call :load_file
+
+            when :nest_string
+              nest_template_with.call :new
+
+            when :read_file
+              @program.emit_expr "#{template_class_name}.read_file(#{nested_template_args})"
+
+            else
+              raise "unknown eRuby directive operation #{operation.inspect}"
+            end
+          end
+
+          prev_node = node
         end
-
-        # process remaining raw content *after* last directive
-        process_content template
 
         # handle missing ends
         if @options[:infer_end]
@@ -276,6 +336,10 @@ module Ember
         end
 
       @program.compile
+    end
+
+    def nest_template_with meth
+
     end
 
     def close_block
@@ -336,7 +400,7 @@ module Ember
         @program.emit_text content_line
 
         # after_newline
-        @program.new_line if content_line =~ /\n\z/
+        @program.new_line! if content_line =~ /\n\z/
       end
     end
 
@@ -382,26 +446,26 @@ module Ember
         end
 
         case operation
-        when OPERATION_EVAL_EXPRESSION
+        when OPERATION_EVALUATE
           @program.emit_expr arguments
 
-        when OPERATION_COMMENT_LINE
+        when OPERATION_COMMENT
           @program.emit_code directive.gsub(/\S/, ' ')
 
-        when OPERATION_BEGIN_LAMBDA
+        when OPERATION_BLOCK
           arguments =~ /(\bdo\b)?\s*(\|[^\|]*\|)?\s*\z/
           @program.emit_code "#{$`} #{$1 || 'do'} #{$2}"
 
           p :begin => directive if $DEBUG
           open_block.call
 
-        when OPERATION_EVAL_TEMPLATE_STRING
+        when OPERATION_NEST_STRING
           nest_template_with[:new]
 
-        when OPERATION_EVAL_TEMPLATE_FILE
+        when OPERATION_NEST_FILE
           nest_template_with[:load_file]
 
-        when OPERATION_INSERT_PLAIN_FILE
+        when OPERATION_READ_FILE
           @program.emit_expr "#{template_class_name}.read_file(#{nested_template_args})"
 
         else
@@ -431,7 +495,7 @@ module Ember
 
       # after_newline
         @program.emit_text after_newline if is_vocal
-        @program.new_line unless after_newline.empty?
+        @program.new_line! unless after_newline.empty?
     end
 
     class Program #:nodoc:
@@ -448,6 +512,11 @@ module Ember
         @source_lines = [] # each line is composed of multiple statements
       end
 
+      def pop_if_margin
+        ary = insertion_point
+        ary.pop if ary.length == 1 and ary.first.type == :text
+      end
+
       ##
       # Returns true if there are no source lines in this program.
       #
@@ -458,7 +527,7 @@ module Ember
       ##
       # Begins a new line in the program's source code.
       #
-      def new_line
+      def new_line!
         @source_lines << []
       end
 
@@ -582,7 +651,7 @@ module Ember
       private
 
       def insertion_point
-        new_line if empty?
+        new_line! if empty?
         @source_lines.last
       end
 
