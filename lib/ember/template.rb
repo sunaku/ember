@@ -237,6 +237,9 @@ module Ember
           template = contents.zip(directives).join
         end
 
+      # convert single-line comment directives into nothing
+        template.gsub!(/^#{SPACING}#{DIRECTIVE_HEAD}##{DIRECTIVE_BODY}#{DIRECTIVE_TAIL}#{SPACING}$/, '')
+
       # translate template into Ruby code
         @margins = []
         @crowns  = []
