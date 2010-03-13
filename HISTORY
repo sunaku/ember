@@ -1,0 +1,36 @@
+%#                                                                          #%
+%#             You can read this document in its full glory by              #%
+%#          opening ./doc/index.html in your favorite Web browser.          #%
+%#                                                                          #%
+
+%#----------------------------------------------------------------------------
+%| section "Version 0.0.1 (2009-10-03)"
+%#----------------------------------------------------------------------------
+
+  This release improves Ruby 1.9 support and revises the user manual.
+
+  %#--------------------------------------------------------------------------
+  %| paragraph "Bug fixes"
+  %#--------------------------------------------------------------------------
+
+    * Nested templates could not access parent's binding in Ruby 1.9
+
+  %#--------------------------------------------------------------------------
+  %| paragraph "Housekeeping"
+  %#--------------------------------------------------------------------------
+
+    * Use simpler Copyright reminder at the top of every file.
+
+    * Rename internal `Program` class' methods to be self-documenting.
+
+    * Open source is for fun, so [be nice][1]: speak
+      of "related works" instead of "competitors".
+
+    [1]: http://loiclemeur.com/english/2009/03/never-criticize-your-competitors.html
+
+%#----------------------------------------------------------------------------
+%| section "Version 0.0.0 (2009-02-13)"
+%#----------------------------------------------------------------------------
+
+  This is the first public release of Ember.  Enjoy!
+

@@ -1,0 +1,151 @@
+%#----------------------------------------------------------------------------
+%| section "Directives"
+%#----------------------------------------------------------------------------
+
+  eRuby templates are plain-text documents that contain special processing
+  instructions known as **directives**, which may be expressed using either
+  **standard** or **shorthand** notation:
+
+  %|table
+    %|thead
+      %|tr
+        %|th
+          Notation
+        %|th
+          Directive
+        %|th
+          Head
+        %|th
+          Operation
+        %|th
+          Body
+        %|th
+          Tail
+    %|tbody
+      %|tr
+        %|td
+          Standard
+        %|td
+          <%%XY%>
+        %|td
+          <%%
+        %|td
+          X
+        %|td
+          Y
+        %|td
+          %%>
+      %|tr
+        %|td
+          Shorthand
+        %|td
+          %%XY
+        %|td
+          %%
+        %|td
+          X
+        %|td
+          Y
+        %|td
+
+  In standard notation, the directive is composed of a head, <%= xref \
+  "Operations", "an operation" %>, a body, and a tail.  In addition, the
+  directive may appear anywhere in the text.
+
+  In shorthand notation, the directive is composed of a head, <%= xref \
+  "Operations", "an operation" %> and a body.  However, the directive may only
+  appear in the text if it occupies an entire line (arbitrary amounts of
+  leading whitespace are permitted).
+
+  In any case, directives are atomic constructs; they cannot be nested.
+
+%#--------------------------------------------------------------------------
+%| section "Operations"
+%#--------------------------------------------------------------------------
+
+  The first character that follows the head of a directive is known as an
+  **operation**.  It prescribes how the directive should be processed:
+
+  %|table
+    %|thead
+      %|tr
+        %|th
+          Operation
+        %|th
+          Effect
+        %|th
+          Example
+    %|tbody
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_COMMENT_LINE %>`
+        %|td
+          The entire directive is omitted from the output.
+        %|td
+          %= xref "Comment directives"
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_EVAL_EXPRESSION %>`
+        %|td
+          The body of the directive is evaluated as Ruby code, and the
+          result of this evaluation is inserted into the output.
+        %|td
+          %= xref "Vocal directives"
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_EVAL_TEMPLATE_STRING %>`
+        %|td
+          The body of the directive is evaluated as an eRuby template, and
+          the result of this evaluation is inserted into the output.
+        %|td
+          %= xref "Dynamic template evaluation"
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_EVAL_TEMPLATE_FILE %>`
+        %|td
+          The body of the directive is evaluated as Ruby code, and the
+          result of this evaluation is assumed to be a string that specifies
+          the path (either absolute or relative to the eRuby template file
+          in which this directive is found) to a file containing an eRuby
+          template.  This file is read and its contents are evaluated as an
+          eRuby template, and the result of this evaluation is inserted into
+          the output.
+        %|td
+          %= xref "Template file inclusion"
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_INSERT_PLAIN_FILE %>`
+        %|td
+          The body of the directive is evaluated as Ruby code, and the
+          result of this evaluation is assumed to be a string that specifies
+          the path (either absolute or relative to the eRuby template file
+          in which this directive is found) to a file.  This file is read
+          and its contents are inserted into the output.
+        %|td
+          %= xref "Raw file inclusion"
+      %|tr
+        %|td
+          `<%= Ember::Template::OPERATION_BEGIN_LAMBDA %>`
+        %|td
+          The body of the directive is treated as the beginning of a Ruby
+          block.  The `do` keyword is automatically appended to the body of
+          the directive if missing.
+        %|td
+          %= xref "Block directives"
+      %|tr
+        %|td
+          `%`
+        %|td
+          One "%" character is omitted from the head of the directive and
+          the entire directive is inserted into the output.
+        %|td
+          %= xref "Escaped directives"
+      %|tr
+        %|td
+          (none of the above)
+        %|td
+          The body of the directive is evaluated as Ruby code, but the
+          result of this evaluation *is not* inserted into the output.
+        %|td
+          %= xref "Silent directives"
+

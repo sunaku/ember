@@ -1,0 +1,54 @@
+%#                                                                          #%
+%#             You can read this document in its full glory by              #%
+%#          opening ./doc/index.html in your favorite Web browser.          #%
+%#                                                                          #%
+
+%#----------------------------------------------------------------------------
+%| project_summary
+%#----------------------------------------------------------------------------
+
+  Ember (*EMBE*dded *R*uby) is an [eRuby template][1] processor that enables
+  debugging, reduces markup, and improves composability of eRuby templates.
+
+  * It reports correct line numbers in error message stack traces.
+  * It can infer <tt><%% end %></tt> based on indentation.
+  * It can unindent block content hierarchically.
+  * It completely silences code-only eRuby directives.
+  * It is implemented in <%= `sloccount lib`[/^\d+/] %> lines of pure Ruby.
+
+  [1]: http://en.wikipedia.org/wiki/ERuby
+
+%#----------------------------------------------------------------------------
+%| section "Resources"
+%#----------------------------------------------------------------------------
+
+  * <%= xref "History", "What's new?" %> ---
+    release notes and project history.
+
+  * [Issue tracker](<%= issue_tracker_url %>) ---
+    report bugs, request features, or ask for help.
+
+  * [Source code](<%= source_code_url %>) ---
+    browse online or obtain using <%= source_code_tool %>
+
+  * [API reference](<%= api_reference_url %>) ---
+    documentation for source code.
+
+  * [Project home](<%= Ember::WEBSITE %>) ---
+    the official project home page.
+
+%#----------------------------------------------------------------------------
+%| section "License"
+%#----------------------------------------------------------------------------
+
+  %# See the file named "LICENSE" for details.
+  %< "LICENSE"
+
+%#----------------------------------------------------------------------------
+%| section "Related works"
+%#----------------------------------------------------------------------------
+
+  * [ERB](http://www.ruby-doc.org/stdlib/libdoc/erb/rdoc/)
+  * [Erubis](http://www.kuwata-lab.com/erubis/)
+  * [eruby](http://modruby.net/en/)
+

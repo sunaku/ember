@@ -1,0 +1,250 @@
+%#                                                                          #%
+%#             You can read this document in its full glory by              #%
+%#          opening ./doc/index.html in your favorite Web browser.          #%
+%#                                                                          #%
+
+%#----------------------------------------------------------------------------
+%| section "Shell command"
+%#----------------------------------------------------------------------------
+
+  %|command! "ember --help" do |node|
+    %|text
+      %= verbatim `ruby bin/#{node.title}`
+
+%#----------------------------------------------------------------------------
+%| section "Ruby library"
+%#----------------------------------------------------------------------------
+
+  Begin by loading Ember into Ruby:
+
+  %|code
+    require 'rubygems' # only necessary if you are using Ruby 1.8
+    require 'ember'
+
+  Instantiate an Ember template processor:
+
+  %|code
+    source   = "your eRuby template here"
+    options  = { :unindent => true, :shorthand => true }
+    template = Ember::Template.new(source, options)
+
+  Inspect the Ruby program that was compiled (and is used) by the Ember
+  template processor to evaluate the eRuby template given as input:
+
+  %|code
+    puts template.program
+
+  View the result of evaluating the eRuby template:
+
+  %|code
+    puts template.render
+
+  See the [API documentation](api/index.html) for more information.
+
+  %#--------------------------------------------------------------------------
+  <%
+    standard_directive = lambda do |body|
+      '<' + '%' + body + ' %' + '>'
+    end
+
+    shorthand_directive = lambda do |body|
+      '%' + body
+    end
+  %>
+
+  %|template_example = lambda do |input, options|
+    % input = input.strip.gsub(/^ {4}/, '') << "\n" # remove indentation
+    % template = Ember::Template.new(input, options)
+
+    % text { input }
+
+    <%=
+      if options.empty?
+        "The"
+      else
+        "With `#{options.inspect}` options, the"
+      end
+    %> above template compiles into:
+
+    % code { template.program }
+
+    And renders as:
+
+    % text { template.render }
+
+  %#--------------------------------------------------------------------------
+  %| example! "An empty template"
+  %#--------------------------------------------------------------------------
+
+    Begin with an empty template:
+
+    %= template_example.call "", {}
+
+  %#--------------------------------------------------------------------------
+  %| example! "Comment directives"
+  %#--------------------------------------------------------------------------
+
+    Add comment directives:
+
+    <%=
+      template_example.call %{
+        #{standard_directive.call  '# this is a comment'}
+        #{shorthand_directive.call '# this is also a comment'}
+
+        #{standard_directive.call  "# this\nis\na\nmulti-line comment"}
+      }, :shorthand => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Escaped directives"
+  %#--------------------------------------------------------------------------
+
+    Add escaped directives:
+
+    <%=
+      example = '% this is an escaped directive'
+
+      template_example.call %{
+        #{standard_directive.call example}
+        #{shorthand_directive.call example}
+      }, :shorthand => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Vocal directives"
+  %#--------------------------------------------------------------------------
+
+    Add vocal directives, which produce output:
+
+    <%=
+      template_example.call %{
+        #{standard_directive.call   '= "hello"'}
+        #{shorthand_directive.call  '= "world"'}
+
+      }, :shorthand => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Silent directives"
+  %#--------------------------------------------------------------------------
+
+    Add silent directives, which do not produce output:
+
+    <%=
+      template_example.call %{
+        #{standard_directive.call   ' a = "hello"'}
+        #{shorthand_directive.call  ' b = "world"'}
+
+        #{standard_directive.call   '= a'}
+        #{shorthand_directive.call  '= b'}
+
+      }, :shorthand => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Block directives"
+  %#--------------------------------------------------------------------------
+
+    Add some Ruby blocks:
+
+    <%=
+      template_example.call %{
+        #{shorthand_directive.call    ' words = %w[hello world]'}
+
+        #{standard_directive.call     ' words.each do |w|'}
+          #{standard_directive.call   '= w'}
+        #{standard_directive.call     ' end'}
+
+        #{shorthand_directive.call    ' words.each do |w|'}
+          #{shorthand_directive.call  '= w'}
+        #{shorthand_directive.call    ' end'}
+
+        #{shorthand_directive.call    '|words.each |w|'}
+          #{shorthand_directive.call  '= w'}
+        #{shorthand_directive.call    ' end'}
+
+      }, :shorthand => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Infer block endings"
+  %#--------------------------------------------------------------------------
+
+    Omit <tt><%= standard_directive.call ' end' %></tt> directives from the
+    template:
+
+    <%=
+      template_example.call %{
+        #{shorthand_directive.call    ' words = %w[hello world]'}
+
+        #{standard_directive.call     ' words.each do |w|'}
+          #{standard_directive.call   '= w'}
+
+        #{shorthand_directive.call    ' words.each do |w|'}
+          #{shorthand_directive.call  '= w'}
+
+        #{shorthand_directive.call    '|words.each |w|'}
+          #{shorthand_directive.call  '= w'}
+
+      }, :shorthand => true, :infer_end => true
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Raw file inclusion"
+  %#--------------------------------------------------------------------------
+
+    When <tt>doc/example.txt</tt> contains:
+
+    %|text
+      %< "doc/example.txt"
+
+    And the eRuby template is:
+
+    <%=
+      example = '< "doc/example.txt"'
+
+      template_example.call %{
+        #{standard_directive.call example}
+
+        #{shorthand_directive.call example}
+
+      }, :shorthand => true, :source_file => __FILE__
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Template file inclusion"
+  %#--------------------------------------------------------------------------
+
+    When <tt>doc/example.erb</tt> contains:
+
+    %|code :rhtml
+      %< "doc/example.erb"
+
+    And the eRuby template is:
+
+    <%=
+      example = '+ "doc/example.erb"'
+
+      template_example.call %{
+        #{standard_directive.call example}
+
+        #{shorthand_directive.call example}
+
+      }, :shorthand => true, :source_file => __FILE__
+    %>
+
+  %#--------------------------------------------------------------------------
+  %| example! "Dynamic template evaluation"
+  %#--------------------------------------------------------------------------
+
+    <%=
+      example = %{~ "#{shorthand_directive.call '= 2 + 2'}"}
+
+      template_example.call %{
+        #{standard_directive.call example}
+
+        #{shorthand_directive.call example}
+
+      }, :shorthand => true
+    %>
+

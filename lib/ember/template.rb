@@ -1,8 +1,3 @@
-#--
-# Copyright protects this work.
-# See LICENSE file for details.
-#++
-
 require 'pathname'
 
 module Ember
@@ -13,53 +8,44 @@ module Ember
     #
     # This processor transforms the given input
     # into an executable Ruby program (provided
-    # by the #program() method) which is then
-    # executed by the #render() method on demand.
+    # by the {#program} method) which is then
+    # executed by the {#render} method on demand.
     #
     # eRuby directives that contribute to the output of
     # the given template are called "vocal" directives.
     # Those that do not are called "silent" directives.
     #
-    # ==== Options
+    # @option options [String] :result_variable ("_erbout")
     #
-    # [:result_variable]
     #   Name of the variable which stores the result of
     #   template evaluation during template evaluation.
     #
-    #   The default value is "_erbout".
+    # @option options [Boolean] :continue_result (false)
     #
-    # [:continue_result]
     #   Append to the result variable if it already exists?
     #
-    #   The default value is false.
+    # @option options [String] :source_file ("SOURCE")
     #
-    # [:source_file]
     #   Name of the file which contains the given input.  This
     #   is shown in stack traces when reporting error messages.
     #
-    #   The default value is "SOURCE".
+    # @option options [Integer] :source_line (1)
     #
-    # [:source_line]
     #   Line number at which the given input exists in the :source_file.
     #   This is shown in stack traces when reporting error messages.
     #
-    #   The default value is 1.
+    # @option options [Boolean] :shorthand (false)
     #
-    # [:shorthand]
     #   Treat lines beginning with "%" as eRuby directives?
     #
-    #   The default value is false.
+    # @option options [Boolean] :infer_end (false)
     #
-    # [:infer_end]
-    #   Add missing <% end %> statements based on indentation?
+    #   Add missing +<% end %>+ statements based on indentation?
     #
-    #   The default value is false.
+    # @option options [Boolean] :unindent (false)
     #
-    # [:unindent]
-    #   Unindent the content of eRuby blocks (everything
-    #   between <% do %> ...  <% end %>) hierarchically?
-    #
-    #   The default value is false.
+    #   Unindent the content of eRuby blocks---that is everything
+    #   between the +<% do %>+ and +<% end %>+ tags---hierarchically?
     #
     def initialize input, options = {}
       @options = options
@@ -79,7 +65,7 @@ module Ember
 
     ##
     # Returns the result of executing the Ruby program for this template
-    # (provided by the #program() method) inside the given context binding.
+    # (provided by the {#program} method) inside the given context binding.
     #
     def render context = TOPLEVEL_BINDING, parent_context_id = nil
       context ||= @@contexts[parent_context_id] # inherit parent context
@@ -141,75 +127,71 @@ module Ember
     OPERATION_EVAL_TEMPLATE_STRING = '~'
     OPERATION_INSERT_PLAIN_FILE    = '<'
 
-    #:stopdoc:
+    OPERATIONS = [
+      OPERATION_COMMENT_LINE,
+      OPERATION_BEGIN_LAMBDA,
+      OPERATION_EVAL_EXPRESSION,
+      OPERATION_EVAL_TEMPLATE_FILE,
+      OPERATION_EVAL_TEMPLATE_STRING,
+      OPERATION_INSERT_PLAIN_FILE,
+    ]
 
-    OPERATIONS            = [
-                              OPERATION_COMMENT_LINE,
-                              OPERATION_BEGIN_LAMBDA,
-                              OPERATION_EVAL_EXPRESSION,
-                              OPERATION_EVAL_TEMPLATE_FILE,
-                              OPERATION_EVAL_TEMPLATE_STRING,
-                              OPERATION_INSERT_PLAIN_FILE,
-                            ]
+    SILENT_OPERATIONS = [
+      OPERATION_COMMENT_LINE,
+      OPERATION_BEGIN_LAMBDA,
+    ]
 
-    SILENT_OPERATIONS     = [
-                              OPERATION_COMMENT_LINE,
-                              OPERATION_BEGIN_LAMBDA,
-                            ]
+    VOCAL_OPERATIONS = OPERATIONS - SILENT_OPERATIONS
 
-    VOCAL_OPERATIONS      = OPERATIONS - SILENT_OPERATIONS
+    DIRECTIVE_HEAD = '<%'
+    DIRECTIVE_BODY = '(?:(?#
+                        there is nothing here, before the alternation,
+                        because we want to match the "<%%>" base case
+                      )|[^%](?:.(?!<%))*?)'
+    DIRECTIVE_TAIL = '-?%>'
 
-    DIRECTIVE_HEAD        = '<%'
-    DIRECTIVE_BODY        = '(?:(?#
-                                there is nothing here before the alternation
-                                because we want to match the "<%%>" base case
-                              )|[^%](?:.(?!<%))*?)'
-    DIRECTIVE_TAIL        = '-?%>'
+    SHORTHAND_HEAD = '%'
+    SHORTHAND_BODY = '(?:(?#
+                        there is nothing here, before the alternation,
+                        because we want to match the "<%%>" base case
+                      )|[^%].*)'
+    SHORTHAND_TAIL = '$'
 
-    SHORTHAND_HEAD        = '%'
-    SHORTHAND_BODY        = '(?:(?#
-                                there is nothing here before the alternation
-                                because we want to match the "<%%>" base case
-                              )|[^%].*)'
-    SHORTHAND_TAIL        = '$'
+    NEWLINE = '\r?\n'
+    SPACING = '[[:blank:]]*'
 
-    NEWLINE               = '\r?\n'
-    SPACING               = '[[:blank:]]*'
+    MARGIN_REGEXP = /^#{SPACING}(?=\S)/o
 
-    MARGIN_REGEXP         = /^#{SPACING}(?=\S)/o
+    LAMBDA_BEGIN_REGEXP = /\b(do)\b\s*(\|.*?\|)?\s*$/
 
-    LAMBDA_BEGIN_REGEXP   = /\b(do)\b\s*(\|.*?\|)?\s*$/
+    build_keyword_regexp = lambda {|*words| /\A\s*\b(#{words.join '|'})\b/ }
 
-    build_keyword_regexp  = lambda {|*words| /\A\s*\b(#{words.join '|'})\b/ }
+    BLOCK_BEGIN_REGEXP = build_keyword_regexp[
+      # generic
+      :begin,
 
-    BLOCK_BEGIN_REGEXP    = build_keyword_regexp[
-                              # generic
-                              :begin,
+      # conditional
+      :if, :unless, :case,
 
-                              # conditional
-                              :if, :unless, :case,
+      # loops
+      :for, :while, :until,
 
-                              # loops
-                              :for, :while, :until,
-
-                              # scopes
-                              :def, :class, :module
-                            ]
+      # scopes
+      :def, :class, :module
+    ]
 
     BLOCK_CONTINUE_REGEXP = build_keyword_regexp[
-                              # generic
-                              :rescue, :ensure,
+      # generic
+      :rescue, :ensure,
 
-                              # conditional
-                              :else, :elsif, :when
-                            ]
+      # conditional
+      :else, :elsif, :when
+    ]
 
-    BLOCK_END_REGEXP      = build_keyword_regexp[
-                              # generic
-                              :end
-                            ]
-
-    #:startdoc:
+    BLOCK_END_REGEXP = build_keyword_regexp[
+      # generic
+      :end
+    ]
 
     ##
     # Transforms the given eRuby template into an executable Ruby program.
