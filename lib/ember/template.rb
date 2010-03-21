@@ -190,7 +190,10 @@ module Ember
                               :if, :unless, :case,
 
                               # loops
-                              :for, :while, :until
+                              :for, :while, :until,
+
+                              # scopes
+                              :def, :class, :module
                             ]
 
     BLOCK_CONTINUE_REGEXP = build_keyword_regexp[
