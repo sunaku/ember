@@ -11,3 +11,4 @@ erb(1)
 [Inochi]: <%= Inochi::WEBSITE %>
 [RubyGems]: http://rubygems.org
 [Ruby]: http://ruby-lang.org
+[Ruby on Rails]: http://rubyonrails.org

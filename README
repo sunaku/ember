@@ -55,6 +55,10 @@ Installing:
 
     gem install ember
 
+Installing as a [Ruby on Rails] plugin:
+
+    script/plugin install git://github.com/sunaku/ember.git
+
 Upgrading:
 
     gem update ember
