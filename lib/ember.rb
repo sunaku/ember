@@ -1,2 +1,5 @@
 require 'ember/inochi'
-require 'ember/template'
+
+module Ember
+  autoload :Template, 'ember/template'
+end

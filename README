@@ -1,54 +1,64 @@
-%#                                                                          #%
-%#             You can read this document in its full glory by              #%
-%#          opening ./doc/index.html in your favorite Web browser.          #%
-%#                                                                          #%
-
 %#----------------------------------------------------------------------------
-%| project_summary
+## ABOUT
 %#----------------------------------------------------------------------------
 
-  Ember (*EMBE*dded *R*uby) is an [eRuby template][1] processor that enables
-  debugging, reduces markup, and improves composability of eRuby templates.
+Ember (*EMBE*dded *R*uby) is an [eRuby template] processor that allows
+debugging, reduces markup, and improves composability of eRuby templates.
 
-  * It reports correct line numbers in error message stack traces.
-  * It can infer <tt><%% end %></tt> based on indentation.
-  * It can unindent block content hierarchically.
-  * It completely silences code-only eRuby directives.
-  * It is implemented in <%= `sloccount lib`[/^\d+/] %> lines of pure Ruby.
-
-  [1]: http://en.wikipedia.org/wiki/ERuby
+[eRuby template]: http://en.wikipedia.org/wiki/ERuby
 
 %#----------------------------------------------------------------------------
-%| section "Resources"
+### Features
 %#----------------------------------------------------------------------------
 
-  * <%= xref "History", "What's new?" %> ---
-    release notes and project history.
+* Reports correct line numbers in error message stack traces.
 
-  * [Issue tracker](<%= issue_tracker_url %>) ---
-    report bugs, request features, or ask for help.
+* Omits newlines trailing code-only `<%% ... %>` directives.
 
-  * [Source code](<%= source_code_url %>) ---
-    browse online or obtain using <%= source_code_tool %>
+* Can infer missing `<%% end %>` directives based on indentation.
 
-  * [API reference](<%= api_reference_url %>) ---
-    documentation for source code.
+* Can unindent eRuby block bodies hierarchically.
 
-  * [Project home](<%= Ember::WEBSITE %>) ---
-    the official project home page.
+* Written in <%= `sloccount lib/ember/template.rb`[/^\d+/] %> lines of pure
+  Ruby.
 
 %#----------------------------------------------------------------------------
-%| section "License"
+### Resources
 %#----------------------------------------------------------------------------
 
-  %# See the file named "LICENSE" for details.
-  %< "LICENSE"
+* Issue tracker (report bugs, request features, get help):
+  <http://github.com/sunaku/ember/issues>
+
+* Source code (browse online or obtain with [Git](http://git-scm.com)):
+  <http://github.com/sunaku/ember>
+
+* API documentation:
+  <<%= File.join(Ember::WEBSITE, 'api/') %>>
+
+* Announcements feed:
+  <<%= File.join(Ember::WEBSITE, 'ann.xml') %>>
+
+* Official website:
+  <<%= Ember::WEBSITE %>>
 
 %#----------------------------------------------------------------------------
-%| section "Related works"
+### Setup
 %#----------------------------------------------------------------------------
 
-  * [ERB](http://www.ruby-doc.org/stdlib/libdoc/erb/rdoc/)
-  * [Erubis](http://www.kuwata-lab.com/erubis/)
-  * [eruby](http://modruby.net/en/)
+Prerequisites:
 
+  * [Ruby](http://ruby-lang.org) 1.8.6 or newer.
+
+  * [RubyGems](http://rubygems.org) 1.3.6 or newer.
+
+Installing:
+
+    gem install ember
+
+Upgrading:
+
+    gem update ember
+
+Removing:
+
+    gem uninstall ember

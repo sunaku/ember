@@ -1,63 +1,11 @@
 #!/usr/bin/env ruby
-#
-# Evaluates eRuby directives in the given eRuby template and
-# writes the result to the standard output stream (STDOUT).
-#
-# Usage:
-#
-#   ember [Options] [TemplateFile]
-#
-# TemplateFile:
-#
-#   Path to the eRuby template file that you want to evaluate.  If
-#   this parameter is not specified, then the result of reading the
-#   standard input stream (STDIN) will be used as the eRuby template.
-#
-# Options:
-#
-#   -s, --shorthand:
-#
-#     Treat lines beginning with zero or more whitespace
-#     followed by the "%" character as eRuby directives.
-#
-#   -i, --infer_end:
-#
-#     Add missing <% end %> directives based on indentation.
-#
-#   -u, --unindent:
-#
-#     Unindent the bodies of eRuby blocks.
-#
-#   -c, --compile:
-#
-#     Print underlying Ruby program compiled
-#     from the input eRuby template and exit.
-#
-#   -h, --help:
-#
-#     Print this message and exit.
-#
-#   -v, --version:
-#
-#     Print version number and exit.
-#
 
-$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'ember'
 
-# parse command line
 if ARGV.delete('-h') or ARGV.delete('--help')
-  puts
-  puts [Ember::PROJECT, Ember::TAGLINE].join(' - ')
-  puts
-  puts File.read(__FILE__)[/^#(\r?\n)(.*?)\1\1/m, 2].gsub(/^# ?/, '')
-  puts
-  puts 'See the user manual for more information:'
-  puts
-  puts '  ' + File.join(Ember::INSTDIR, 'doc', 'index.html')
-  puts
-  puts '  ' + Ember::WEBSITE
-  puts
+  man_dir = File.join(Ember::INSTDIR, 'man')
+  system 'man', '-M', man_dir, '-a', 'ember' or
+  puts Dir["#{man_dir}/**/*.html"].push(Ember::WEBSITE).map {|s| "See #{s}" }
   exit
 elsif ARGV.delete('-v') or ARGV.delete('--version')
   puts Ember::VERSION

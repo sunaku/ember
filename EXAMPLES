@@ -1,0 +1,240 @@
+%#----------------------------------------------------------------------------
+## EXAMPLES
+%#----------------------------------------------------------------------------
+
+Begin by loading Ember into Ruby:
+
+    require 'rubygems' # might not be necessary; see HACKING
+    require 'ember'
+
+Instantiate an Ember template processor:
+
+    source   = "your eRuby template here"
+    options  = {} # see API documentation
+    template = Ember::Template.new(source, options)
+
+Inspect the Ruby program that was compiled (and is used) by the Ember
+template processor to evaluate the eRuby template given as input:
+
+    puts template.program
+
+View the result of evaluating the eRuby template:
+
+    puts template.render
+
+See the API documentation for more information.
+
+%#----------------------------------------------------------------------------
+
+<%
+  def standard_directive body
+    '<' + '%' + body + ' %' + '>'
+  end
+
+  def shorthand_directive body
+    '%' + body
+  end
+
+  def markdown_pre_block body
+    if body =~ /\S/
+      body.gsub(/^/, ' ' * 4)
+    else
+      "<pre>#{body}</pre>"
+    end
+  end
+
+  def template_example input, options
+    input = input.gsub(/^ {4}/, '') << "\n" # remove indentation
+    template = Ember::Template.new(input, options)
+
+    [
+      markdown_pre_block(input),
+
+      if options.empty?
+        'The'
+      else
+        "With `#{options.inspect}` options, the"
+      end,
+
+      'above template compiles into:',
+      markdown_pre_block(template.program),
+
+      'And renders as:',
+      markdown_pre_block(template.render),
+
+    ].join("\n")
+  end
+%>
+
+%#----------------------------------------------------------------------------
+### An empty template
+%#----------------------------------------------------------------------------
+
+Begin with an empty template:
+
+%= template_example "", {}
+
+%#----------------------------------------------------------------------------
+### Comment directives
+%#----------------------------------------------------------------------------
+
+Add comment directives:
+
+<%=
+  template_example %{
+    #{standard_directive  '# this is a comment'}
+    #{shorthand_directive '# this is also a comment'}
+
+    #{standard_directive  "# this\nis\n\ta\nmulti-line comment"}
+  }, :shorthand => true
+%>
+
+%#----------------------------------------------------------------------------
+### Escaped directives
+%#----------------------------------------------------------------------------
+
+Add escaped directives:
+
+<%=
+  example = '% this is an escaped directive'
+
+  template_example %{
+    #{standard_directive example}
+    #{shorthand_directive example}
+  }, :shorthand => true
+%>
+
+%#----------------------------------------------------------------------------
+### Vocal directives
+%#----------------------------------------------------------------------------
+
+Add vocal directives, which produce output:
+
+<%=
+  template_example %{
+    #{standard_directive   '= "hello"'}
+    #{shorthand_directive  '= "world"'}
+
+  }, :shorthand => true
+%>
+
+%#----------------------------------------------------------------------------
+### Silent directives
+%#----------------------------------------------------------------------------
+
+Add silent directives, which do not produce output:
+
+<%=
+  template_example %{
+    #{standard_directive   ' a = "hello"'}
+    #{shorthand_directive  ' b = "world"'}
+
+    #{standard_directive   '= a'}
+    #{shorthand_directive  '= b'}
+
+  }, :shorthand => true
+%>
+
+%#----------------------------------------------------------------------------
+### Block directives
+%#----------------------------------------------------------------------------
+
+Add some Ruby blocks:
+
+<%=
+  template_example %{
+    #{shorthand_directive    ' words = %w[hello world]'}
+
+    #{standard_directive     ' words.each do |w|'}
+      #{standard_directive   '= w'}
+    #{standard_directive     ' end'}
+
+    #{shorthand_directive    ' words.each do |w|'}
+      #{shorthand_directive  '= w'}
+    #{shorthand_directive    ' end'}
+
+    #{shorthand_directive    '|words.each |w|'}
+      #{shorthand_directive  '= w'}
+    #{shorthand_directive    ' end'}
+
+  }, :shorthand => true
+%>
+
+%#----------------------------------------------------------------------------
+### Infer block endings
+%#----------------------------------------------------------------------------
+
+Omit `<%% end %>` directives from the template:
+
+<%=
+  template_example %{
+    #{shorthand_directive    ' words = %w[hello world]'}
+
+    #{standard_directive     ' words.each do |w|'}
+      #{standard_directive   '= w'}
+
+    #{shorthand_directive    ' words.each do |w|'}
+      #{shorthand_directive  '= w'}
+
+    #{shorthand_directive    '|words.each |w|'}
+      #{shorthand_directive  '= w'}
+
+  }, :shorthand => true, :infer_end => true
+%>
+
+%#----------------------------------------------------------------------------
+### Raw file inclusion
+%#----------------------------------------------------------------------------
+
+When `doc/example.txt` contains:
+
+%= markdown_pre_block File.read('doc/example.txt')
+
+And the eRuby template is:
+
+<%=
+  example = '< "doc/example.txt"'
+
+  template_example %{
+    #{standard_directive example}
+
+    #{shorthand_directive example}
+
+  }, :shorthand => true, :source_file => __FILE__
+%>
+
+%#----------------------------------------------------------------------------
+### Template file inclusion
+%#----------------------------------------------------------------------------
+
+When `doc/example.erb` contains:
+
+%= markdown_pre_block File.read('doc/example.erb')
+
+And the eRuby template is:
+
+<%=
+  example = '+ "doc/example.erb"'
+
+  template_example %{
+    #{standard_directive example}
+
+    #{shorthand_directive example}
+
+  }, :shorthand => true, :source_file => __FILE__
+%>
+
+%#----------------------------------------------------------------------------
+### Dynamic template evaluation
+%#----------------------------------------------------------------------------
+
+<%=
+  example = %{~ "#{shorthand_directive '= 2 + 2'}"}
+
+  template_example %{
+    #{standard_directive example}
+
+    #{shorthand_directive example}
+
+  }, :shorthand => true
+%>

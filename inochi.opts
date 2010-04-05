@@ -18,10 +18,10 @@
 #
 #   :gem_spec_logic: |
 #     # show the Inochi-provided specification for this project's RubyGem
-#     puts gem
+#     require 'pp'; pp gem
 #
 #     # add files that are outside this project directory to the RubyGem
-#     gem.files += FileList['/some/outside/**/*.files']
+#     gem.files.include 'some', 'files', 'in*/**/*', 'this', 'directory'
 #
 #     # omit some files in this project's directory from the RubyGem
 #     gem.files.exclude '{some*files,in_this,project/**/directory}'

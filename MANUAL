@@ -1,25 +1,13 @@
-%#                                                                          #%
-%#             You can read this document in its full glory by              #%
-%#          opening ./doc/index.html in your favorite Web browser.          #%
-%#                                                                          #%
+%+ "README"
 
-% api_reference_url = 'api/index.html'
-% source_code_tool  = '[Git](http://git-scm.com)'
-% source_code_url   = 'http://github.com/sunaku/ember'
-% issue_tracker_url = 'http://github.com/sunaku/ember/issues'
+%+ "USAGE"
 
-%|part "Welcome"
-  %+ "README"
+%+ "EXAMPLES"
 
-%|part "Setup"
-  %+ "INSTALL"
+%+ "HACKING"
 
-%|part "Theory"
-  %+ "THEORY"
+%+ "HISTORY"
 
-%|part "Usage"
-  %+ "USAGE"
+%+ "CREDITS"
 
-%|part "History"
-  %|project_history
-    %+ "HISTORY"
+%+ "FURTHER"

@@ -1,79 +1,68 @@
-%#                                                                          #%
-%#             You can read this document in its full glory by              #%
-%#          opening ./doc/index.html in your favorite Web browser.          #%
-%#                                                                          #%
-
 %#----------------------------------------------------------------------------
-%| section "Version 0.1.0 (2010-04-03)"
+## VERSIONS
 %#----------------------------------------------------------------------------
 
-  This release improves the handling of eRuby comment directives, fixes a bug
-  in the `<%% end %>` inference logic, and performs some minor housekeeping.
-
-  %#--------------------------------------------------------------------------
-  %| paragraph "New features"
-  %#--------------------------------------------------------------------------
-
-    * Single-line comment directives are now ignored (treated like no-ops)
-      in input templates.  This allows us to surround eRuby block directives
-      with section separators made from single-line comment directives:
-
-          %%|some_block_directive
-
-            Inside some_block_directive.
-
-          %%#-----------------------------------------------------------------
-
-            Still inside some_block_directive!
-
-            %%#---------------------------------------------------------------
-            %%| nested_block_directive
-            %%#---------------------------------------------------------------
-
-              Inside nested_block_directive.
-
-  %#--------------------------------------------------------------------------
-  %| paragraph "Bug fixes"
-  %#--------------------------------------------------------------------------
-
-    * `<%% end %>` inference did not work for blocks
-      beginning with `def`, `class`, and `module` keywords.
-
-  %#--------------------------------------------------------------------------
-  %| paragraph "Housekeeping"
-  %#--------------------------------------------------------------------------
-
-    * Upgrade to Inochi 2.0.0-rc3.  This project no longer
-      depends on the "inochi" or "trollop" gems at runtime.
+This section contains release notes of current and past releases.
 
 %#----------------------------------------------------------------------------
-%| section "Version 0.0.1 (2009-10-03)"
+### Version 0.1.0 (2010-04-03)
 %#----------------------------------------------------------------------------
 
-  This release improves Ruby 1.9 support and revises the user manual.
+This release improves the handling of eRuby comment directives, fixes a bug
+in the `<%% end %>` inference logic, and performs some minor housekeeping.
 
-  %#--------------------------------------------------------------------------
-  %| paragraph "Bug fixes"
-  %#--------------------------------------------------------------------------
+New features:
 
-    * Nested templates could not access parent's binding in Ruby 1.9
+* Single-line comment directives are now ignored (treated like no-ops)
+  in input templates.  This allows us to surround eRuby block directives
+  with section separators made from single-line comment directives:
 
-  %#--------------------------------------------------------------------------
-  %| paragraph "Housekeeping"
-  %#--------------------------------------------------------------------------
+      %%|some_block_directive
 
-    * Use simpler Copyright reminder at the top of every file.
+        Inside some_block_directive.
 
-    * Rename internal `Program` class' methods to be self-documenting.
+      %%#---------------------------------------------------------------------
 
-    * Open source is for fun, so [be nice][1]: speak
-      of "related works" instead of "competitors".
+        Still inside some_block_directive!
 
-    [1]: http://loiclemeur.com/english/2009/03/never-criticize-your-competitors.html
+        %%#-------------------------------------------------------------------
+        %%| nested_block_directive
+        %%#-------------------------------------------------------------------
+
+          Inside nested_block_directive.
+
+Bug fixes:
+
+* `<%% end %>` inference did not work for blocks
+  beginning with `def`, `class`, and `module` keywords.
+
+Housekeeping:
+
+* Upgrade to Inochi 2.0.0-rc3.  This project no longer
+  depends on the "inochi" or "trollop" gems at runtime.
 
 %#----------------------------------------------------------------------------
-%| section "Version 0.0.0 (2009-02-13)"
+### Version 0.0.1 (2009-10-03)
 %#----------------------------------------------------------------------------
 
-  This is the first public release of Ember.  Enjoy!
+This release improves Ruby 1.9 support and revises the user manual.
 
+Bug fixes:
+
+* Nested templates could not access parent's binding in Ruby 1.9
+
+Housekeeping:
+
+* Use simpler Copyright reminder at the top of every file.
+
+* Rename internal `Program` class' methods to be self-documenting.
+
+* Open source is for fun, so [be
+  nice](http://loiclemeur.com/english/2009/03/never-criticize-your-competitors.html)
+  and speak of "related works" instead of "competitors".
+
+%#----------------------------------------------------------------------------
+### Version 0.0.0 (2009-02-13)
+%#----------------------------------------------------------------------------
+
+This is the first public release of Ember.  Enjoy!

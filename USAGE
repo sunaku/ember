@@ -1,250 +1,120 @@
-%#                                                                          #%
-%#             You can read this document in its full glory by              #%
-%#          opening ./doc/index.html in your favorite Web browser.          #%
-%#                                                                          #%
-
 %#----------------------------------------------------------------------------
-%| section "Shell command"
+## SYNOPSIS
 %#----------------------------------------------------------------------------
 
-  %|command! "ember --help" do |node|
-    %|text
-      %= verbatim `ruby bin/#{node.title}`
+`ember` [<OPTIONS>] [<FILE>]
 
 %#----------------------------------------------------------------------------
-%| section "Ruby library"
+## DESCRIPTION
 %#----------------------------------------------------------------------------
 
-  Begin by loading Ember into Ruby:
+Evaluates eRuby directives (see **SYNTAX** below) in the given <FILE> and
+writes the result to the standard output stream (STDOUT).  If <FILE> is not
+given, then the standard input stream (STDIN) is evaluated instead.
 
-  %|code
-    require 'rubygems' # only necessary if you are using Ruby 1.8
-    require 'ember'
+%#----------------------------------------------------------------------------
+## OPTIONS
+%#----------------------------------------------------------------------------
 
-  Instantiate an Ember template processor:
-
-  %|code
-    source   = "your eRuby template here"
-    options  = { :unindent => true, :shorthand => true }
-    template = Ember::Template.new(source, options)
-
-  Inspect the Ruby program that was compiled (and is used) by the Ember
-  template processor to evaluate the eRuby template given as input:
-
-  %|code
-    puts template.program
-
-  View the result of evaluating the eRuby template:
-
-  %|code
-    puts template.render
-
-  See the [API documentation](api/index.html) for more information.
-
-  %#--------------------------------------------------------------------------
-  <%
-    standard_directive = lambda do |body|
-      '<' + '%' + body + ' %' + '>'
-    end
-
-    shorthand_directive = lambda do |body|
-      '%' + body
-    end
-  %>
-
-  %|template_example = lambda do |input, options|
-    % input = input.strip.gsub(/^ {4}/, '') << "\n" # remove indentation
-    % template = Ember::Template.new(input, options)
-
-    % text { input }
-
-    <%=
-      if options.empty?
-        "The"
-      else
-        "With `#{options.inspect}` options, the"
-      end
-    %> above template compiles into:
-
-    % code { template.program }
-
-    And renders as:
-
-    % text { template.render }
-
-  %#--------------------------------------------------------------------------
-  %| example! "An empty template"
-  %#--------------------------------------------------------------------------
-
-    Begin with an empty template:
-
-    %= template_example.call "", {}
-
-  %#--------------------------------------------------------------------------
-  %| example! "Comment directives"
-  %#--------------------------------------------------------------------------
-
-    Add comment directives:
-
-    <%=
-      template_example.call %{
-        #{standard_directive.call  '# this is a comment'}
-        #{shorthand_directive.call '# this is also a comment'}
-
-        #{standard_directive.call  "# this\nis\na\nmulti-line comment"}
-      }, :shorthand => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Escaped directives"
-  %#--------------------------------------------------------------------------
-
-    Add escaped directives:
-
-    <%=
-      example = '% this is an escaped directive'
-
-      template_example.call %{
-        #{standard_directive.call example}
-        #{shorthand_directive.call example}
-      }, :shorthand => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Vocal directives"
-  %#--------------------------------------------------------------------------
-
-    Add vocal directives, which produce output:
-
-    <%=
-      template_example.call %{
-        #{standard_directive.call   '= "hello"'}
-        #{shorthand_directive.call  '= "world"'}
-
-      }, :shorthand => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Silent directives"
-  %#--------------------------------------------------------------------------
-
-    Add silent directives, which do not produce output:
-
-    <%=
-      template_example.call %{
-        #{standard_directive.call   ' a = "hello"'}
-        #{shorthand_directive.call  ' b = "world"'}
-
-        #{standard_directive.call   '= a'}
-        #{shorthand_directive.call  '= b'}
-
-      }, :shorthand => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Block directives"
-  %#--------------------------------------------------------------------------
-
-    Add some Ruby blocks:
-
-    <%=
-      template_example.call %{
-        #{shorthand_directive.call    ' words = %w[hello world]'}
-
-        #{standard_directive.call     ' words.each do |w|'}
-          #{standard_directive.call   '= w'}
-        #{standard_directive.call     ' end'}
-
-        #{shorthand_directive.call    ' words.each do |w|'}
-          #{shorthand_directive.call  '= w'}
-        #{shorthand_directive.call    ' end'}
-
-        #{shorthand_directive.call    '|words.each |w|'}
-          #{shorthand_directive.call  '= w'}
-        #{shorthand_directive.call    ' end'}
-
-      }, :shorthand => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Infer block endings"
-  %#--------------------------------------------------------------------------
-
-    Omit <tt><%= standard_directive.call ' end' %></tt> directives from the
-    template:
-
-    <%=
-      template_example.call %{
-        #{shorthand_directive.call    ' words = %w[hello world]'}
-
-        #{standard_directive.call     ' words.each do |w|'}
-          #{standard_directive.call   '= w'}
-
-        #{shorthand_directive.call    ' words.each do |w|'}
-          #{shorthand_directive.call  '= w'}
-
-        #{shorthand_directive.call    '|words.each |w|'}
-          #{shorthand_directive.call  '= w'}
-
-      }, :shorthand => true, :infer_end => true
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Raw file inclusion"
-  %#--------------------------------------------------------------------------
-
-    When <tt>doc/example.txt</tt> contains:
-
-    %|text
-      %< "doc/example.txt"
-
-    And the eRuby template is:
-
-    <%=
-      example = '< "doc/example.txt"'
-
-      template_example.call %{
-        #{standard_directive.call example}
-
-        #{shorthand_directive.call example}
-
-      }, :shorthand => true, :source_file => __FILE__
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Template file inclusion"
-  %#--------------------------------------------------------------------------
-
-    When <tt>doc/example.erb</tt> contains:
-
-    %|code :rhtml
-      %< "doc/example.erb"
-
-    And the eRuby template is:
-
-    <%=
-      example = '+ "doc/example.erb"'
-
-      template_example.call %{
-        #{standard_directive.call example}
-
-        #{shorthand_directive.call example}
-
-      }, :shorthand => true, :source_file => __FILE__
-    %>
-
-  %#--------------------------------------------------------------------------
-  %| example! "Dynamic template evaluation"
-  %#--------------------------------------------------------------------------
-
-    <%=
-      example = %{~ "#{shorthand_directive.call '= 2 + 2'}"}
-
-      template_example.call %{
-        #{standard_directive.call example}
-
-        #{shorthand_directive.call example}
-
-      }, :shorthand => true
-    %>
-
+* `-s`, `--shorthand`:
+    Treat lines beginning with zero or more whitespace
+    followed by the "%" character as eRuby directives.
+
+* `-i`, `--infer_end`:
+    Add missing `<%% end %>` directives based on indentation.
+
+* `-u`, `--unindent`:
+    Unindent the bodies of directives that define a
+    Ruby block (do ... end) or scope (begin ... end).
+
+* `-c`, `--compile`:
+    Print underlying Ruby program compiled
+    from the input eRuby template and exit.
+
+* `-h`, `--help`:
+    Print this message and exit.
+
+* `-v`, `--version`:
+    Print version number and exit.
+
+%#----------------------------------------------------------------------------
+## SYNTAX
+%#----------------------------------------------------------------------------
+
+This section explains [eRuby template] syntax and Ember extensions thereof.
+
+eRuby templates are plain-text documents that contain special processing
+instructions known as **directives**.  These instructions are evaluated *in
+place*, meaning that they are replaced by the result of their evaluation.
+
+%#----------------------------------------------------------------------------
+### Directives
+%#----------------------------------------------------------------------------
+
+Directives are expressed in either **standard** or **shorthand** notation:
+
+    %# XXX: The misalignment in this table is intentional: it allows for
+    %#      the %% => % reduction when escaped directives are processed.
+
+    Notation    Directive   Head   Operation   Body   Tail
+    --------    ---------   ----   ---------   ----   ----
+    Standard    <%%XY%>      <%%     X           Y      %>
+    Shorthand   %XY         %      X           Y
+
+In standard notation, the directive is composed of a **head**, an
+**operation**, a **body**, and a **tail**; and it may appear anywhere in the
+template.
+
+In shorthand notation, the directive is composed of a **head**, an
+**operation**, and a **body**; and it may only appear in the template if it
+occupies an entire line (leading whitespace is permitted only in Ember;
+trailing whitespace is permitted in both Ember and eRuby).
+
+Regardless of the notation used, directives are atomic constructs; they cannot
+be nested within one another.
+
+%#----------------------------------------------------------------------------
+### Operations
+%#----------------------------------------------------------------------------
+
+The first character following the head of a directive is known as an
+**operation**.  It determines how the directive is processed by Ember.
+
+* `#`:
+  The entire directive is omitted from the output.
+
+* `=`:
+  The body of the directive is evaluated as Ruby code, and the result of
+  this evaluation is inserted into the output.
+
+* `~`:
+  (only in Ember) The body of the directive is evaluated as an eRuby
+  template, and the result of this evaluation is inserted into the output.
+
+* `+`:
+  (only in Ember) The body of the directive is evaluated as Ruby code, and
+  the result of this evaluation is assumed to be a string that specifies the
+  path (either absolute or relative to the eRuby template file in which this
+  directive is found) to a file containing an eRuby template.  This file is
+  read and its contents are evaluated as an eRuby template, and the result
+  of this evaluation is inserted into the output.
+
+* `<`:
+  (only in Ember) The body of the directive is evaluated as Ruby code, and
+  the result of this evaluation is assumed to be a string that specifies the
+  path (either absolute or relative to the eRuby template file in which this
+  directive is found) to a file.  This file is read and its contents are
+  inserted into the output.
+
+* `|`:
+  (only in Ember) The body of the directive is treated as the beginning of a
+  Ruby block.  The `do` keyword is automatically appended to the body of the
+  directive if missing.
+
+* `%`:
+  One "%" character is omitted from the head of the directive and the entire
+  directive is inserted into the output.
+
+* None of the above:
+  The body of the directive is evaluated as Ruby code, but the result of
+  this evaluation *is not* inserted into the output.
