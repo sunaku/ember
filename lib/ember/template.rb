@@ -546,7 +546,7 @@ module Ember
               else
                 code =
                   if is_expr
-                    " << (#{stmt.value})"
+                    " << (#{stmt.value.strip})"
                   else
                     " << #{stmt.value.inspect}"
                   end
