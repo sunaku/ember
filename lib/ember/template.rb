@@ -67,8 +67,10 @@ module Ember
     # Returns the result of executing the Ruby program for this template
     # (provided by the {#program} method) inside the given context binding.
     #
-    def render context = TOPLEVEL_BINDING, parent_context_id = nil
-      context ||= @@contexts[parent_context_id] # inherit parent context
+    def render context = nil, parent_context_id = nil
+      context ||=
+        @@contexts[parent_context_id] ||        # inherit parent context
+        Object.new.instance_eval('binding')     # create new context
       @@contexts[@render_context_id] = context  # provide to children
 
       result = eval @compile, context,
