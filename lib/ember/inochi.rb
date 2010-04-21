@@ -18,12 +18,12 @@ module Ember
   ##
   # Number of this release of this project.
   #
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   ##
   # Date of this release of this project.
   #
-  RELDATE = "2010-04-03"
+  RELDATE = "2010-04-20"
 
   ##
   # Description of this release of this project.

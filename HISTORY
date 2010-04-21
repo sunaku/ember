@@ -5,6 +5,30 @@
 This section contains release notes of current and past releases.
 
 %#----------------------------------------------------------------------------
+### Version 0.1.1 (2010-04-20)
+%#----------------------------------------------------------------------------
+
+This release fixes a nested rendering bug, updates the manual, and further
+beautifies the Ruby code that results from eRuby template compilation.
+
+Bug fixes:
+
+* `Ember::Template#render()` now creates isolated contexts by default to
+  prevent nested calls from clobbering each other's output!
+
+  For example, if template A calls method X which renders template B (thinking
+  that template B's rendering is isolated and will not affect the rendering of
+  template A) then you're in for a hell of a wild bug chase!  >8-(
+
+Housekeeping:
+
+* Upgrade to Inochi 2.0.0rc5.  Convert manual from ERBook to Ember + Ronn.
+
+* Remove spaces around value insertions in template compilation output.
+
+* Remove logo images from source repository because they're no longer used.
+
+%#----------------------------------------------------------------------------
 ### Version 0.1.0 (2010-04-03)
 %#----------------------------------------------------------------------------
 
