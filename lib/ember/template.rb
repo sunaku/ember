@@ -363,7 +363,7 @@ module Ember
 
       # directive
         template_class_name  = '::Ember::Template'
-        nested_template_args = "(#{arguments}), #{@options.inspect}"
+        nested_template_args = "(#{arguments.strip}), #{@options.inspect}"
 
         nest_template_with = lambda do |meth|
           @program.emit_code "#{template_class_name}.#{meth}(#{
