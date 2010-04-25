@@ -104,6 +104,51 @@ module Ember
         File.read resolve_path(path, options)
       end
 
+      ##
+      # Returns the template evaluation result buffer
+      # associated with the given content block.
+      #
+      def buffer_from_block content_block
+        context = content_block.binding
+        result_variable = eval(Program::RESULT_VARIABLE_BACKDOOR, context)
+        eval result_variable.to_s, context
+      end
+
+      ##
+      # Invokes the given block while passing the given arguments to
+      # it and then returns an Array of things that the given block
+      # tried to append to its template evaluation result buffer.
+      #
+      # If the given block did not try to append anything, then the
+      # result of invoking the given block is returned as an Array.
+      #
+      def content_from_block content_block, *content_block_args
+        context = content_block.binding
+
+        orig_result_variable = eval(Program::RESULT_VARIABLE_BACKDOOR, context)
+        temp_result_variable = "#{orig_result_variable}_#{context.object_id.abs}"
+        eval "#{temp_result_variable} = #{orig_result_variable}", context
+
+        begin
+          # the content block appends to the result buffer when invoked.
+          # so we temporarily replace the result buffer with an empty one,
+          # invoke the content block, and viola!  we now have its content.
+          block_content = eval("#{orig_result_variable} = []", context)
+          return_value = content_block.call(*content_block_args)
+        ensure
+          eval "#{orig_result_variable} = #{temp_result_variable}", context
+        end
+
+        if block_content.empty?
+          # no content was appended to the result buffer when the content
+          # block was invoked because it did not contain any vocal directives.
+          # so we return the return value of content block invocation instead.
+          Array(return_value)
+        else
+          block_content
+        end
+      end
+
       private
 
       def resolve_path path, options = {}
@@ -426,6 +471,13 @@ module Ember
 
     class Program #:nodoc:
       ##
+      # Name of a variable whose value is the
+      # name of the result variable in the
+      # Ruby code produced by this program.
+      #
+      RESULT_VARIABLE_BACKDOOR = 'e08afdfb_62c7_485f_87a0_80914e1b4703' # UUID
+
+      ##
       # Transforms this program into Ruby code which uses
       # the given variable name as the evaluation buffer.
       #
@@ -527,7 +579,10 @@ module Ember
       # Transforms this program into executable Ruby source code.
       #
       def compile
-        '(%s %s []; %s; %s.join)' % [
+        '(%s = %s; %s %s []; %s; %s.join)' % [
+          RESULT_VARIABLE_BACKDOOR,
+          @result_variable.inspect,
+
           @result_variable,
           @continue_result ? '||=' : '=',
 
