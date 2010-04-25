@@ -16,14 +16,13 @@ Install Ruby libraries necessary for development:
 ### Infrastructure
 %#----------------------------------------------------------------------------
 
-% require 'inochi'
+[Inochi] serves as the project infrastructure for Ember.  It handles tasks
+such as building this help manual and API documentation, and packaging,
+announcing, and publishing new releases.  See its help manual and list of
+tasks to get started:
 
-[Inochi](<%= Inochi::WEBSITE %>) serves as Ember's project infrastructure.
-It handles tasks such as building this manual and API documentation, and
-packaging, announcing, and publishing new releases.  See its manual to get
-started:
-
-    inochi --help
+    inochi --help     # display help manual
+    inochi --tasks    # list available tasks
 
 %#----------------------------------------------------------------------------
 ### $LOAD_PATH setup
@@ -34,7 +33,8 @@ use any libraries therein or run any executables in the `bin/` directory.
 
 This can be achieved by passing an option to Ruby:
 
-    ruby -Ilib
+    ruby -Ilib bin/ember
+    irb -Ilib -r ember
 
 Or by setting the `$RUBYLIB` environment variable:
 
@@ -42,19 +42,23 @@ Or by setting the `$RUBYLIB` environment variable:
     setenv RUBYLIB lib   # csh
     set -x RUBYLIB lib   # fish
 
+    ruby bin/ember
+    irb -r ember
+
 Or by installing the [ruby-wrapper](http://github.com/chneukirchen/rup) tool.
 
 %#----------------------------------------------------------------------------
 ### RubyGems setup
 %#----------------------------------------------------------------------------
 
-If you use Ruby 1.8 and RubyGems to manage your Ruby software, then ensure
-that RubyGems is activated before you use any libraries in the `lib/`
-directory or run any executables in the `bin/` directory.
+If you use Ruby 1.8 or older, then ensure that RubyGems is activated before
+you use any libraries in the `lib/` directory or run any executables in the
+`bin/` directory.
 
 This can be achieved by passing an option to Ruby:
 
-    ruby -rubygems
+    ruby -rubygems bin/ember
+    irb -rubygems -r ember
 
 Or by setting the `$RUBYOPT` environment variable:
 

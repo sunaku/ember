@@ -13,20 +13,20 @@ beautifies the Ruby code that results from eRuby template compilation.
 
 Bug fixes:
 
-* `Ember::Template#render()` now creates isolated contexts by default to
-  prevent nested calls from clobbering each other's output!
+  * `Ember::Template#render()` now creates isolated contexts by default to
+    prevent nested calls from clobbering each other's output!
 
-  For example, if template A calls method X which renders template B (thinking
-  that template B's rendering is isolated and will not affect the rendering of
-  template A) then you're in for a hell of a wild bug chase!  >8-(
+    For example, if template A calls method X which renders template B
+    (thinking that template B's rendering is isolated and will not affect the
+    rendering of template A) then you're in for a wild bug chase!  >8-(
 
 Housekeeping:
 
-* Upgrade to Inochi 2.0.0rc5.  Convert manual from ERBook to Ember + Ronn.
+  * Upgrade to Inochi 2.0.0rc5.  Convert manual from ERBook to Ember + Ronn.
 
-* Remove spaces around value insertions in template compilation output.
+  * Remove spaces around value insertions in template compilation output.
 
-* Remove logo images from source repository because they're no longer used.
+  * Remove logo images from source repository because they're no longer used.
 
 %#----------------------------------------------------------------------------
 ### Version 0.1.0 (2010-04-03)
@@ -37,33 +37,33 @@ in the `<%% end %>` inference logic, and performs some minor housekeeping.
 
 New features:
 
-* Single-line comment directives are now ignored (treated like no-ops)
-  in input templates.  This allows us to surround eRuby block directives
-  with section separators made from single-line comment directives:
+  * Single-line comment directives are now ignored (treated like no-ops)
+    in input templates.  This allows us to surround eRuby block directives
+    with section separators made from single-line comment directives:
 
-      %%|some_block_directive
+        %%|some_block_directive
 
-        Inside some_block_directive.
-
-      %%#---------------------------------------------------------------------
-
-        Still inside some_block_directive!
+          Inside some_block_directive.
 
         %%#-------------------------------------------------------------------
-        %%| nested_block_directive
-        %%#-------------------------------------------------------------------
 
-          Inside nested_block_directive.
+          Still inside some_block_directive!
+
+          %%#-----------------------------------------------------------------
+          %%| nested_block_directive
+          %%#-----------------------------------------------------------------
+
+            Inside nested_block_directive.
 
 Bug fixes:
 
-* `<%% end %>` inference did not work for blocks
-  beginning with `def`, `class`, and `module` keywords.
+  * `<%% end %>` inference did not work for blocks
+    beginning with `def`, `class`, and `module` keywords.
 
 Housekeeping:
 
-* Upgrade to Inochi 2.0.0-rc3.  This project no longer
-  depends on the "inochi" or "trollop" gems at runtime.
+  * Upgrade to Inochi 2.0.0-rc3.  This project no longer
+    depends on the "inochi" or "trollop" gems at runtime.
 
 %#----------------------------------------------------------------------------
 ### Version 0.0.1 (2009-10-03)
@@ -73,17 +73,17 @@ This release improves Ruby 1.9 support and revises the user manual.
 
 Bug fixes:
 
-* Nested templates could not access parent's binding in Ruby 1.9
+  * Nested templates could not access parent's binding in Ruby 1.9
 
 Housekeeping:
 
-* Use simpler Copyright reminder at the top of every file.
+  * Use simpler Copyright reminder at the top of every file.
 
-* Rename internal `Program` class' methods to be self-documenting.
+  * Rename internal `Program` class' methods to be self-documenting.
 
-* Open source is for fun, so [be
-  nice](http://loiclemeur.com/english/2009/03/never-criticize-your-competitors.html)
-  and speak of "related works" instead of "competitors".
+  * Open source is for fun, so [be nice](
+    http://loiclemeur.com/english/2009/03/never-criticize-your-competitors.html
+    ) and speak of "related works" instead of "competitors".
 
 %#----------------------------------------------------------------------------
 ### Version 0.0.0 (2009-02-13)

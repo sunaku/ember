@@ -2,6 +2,12 @@
 ## SEE ALSO
 %#----------------------------------------------------------------------------
 
-erb(1),
-[Erubis](http://www.kuwata-lab.com/erubis/),
-[eruby](http://modruby.net/en/)
+erb(1)
+
+%#----------------------------------------------------------------------------
+%# Markdown link references
+%#----------------------------------------------------------------------------
+
+[Inochi]: <%= Inochi::WEBSITE %>
+[RubyGems]: http://rubygems.org
+[Ruby]: http://ruby-lang.org

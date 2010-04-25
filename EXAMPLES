@@ -35,20 +35,12 @@ See the API documentation for more information.
     '%' + body
   end
 
-  def markdown_pre_block body
-    if body =~ /\S/
-      body.gsub(/^/, ' ' * 4)
-    else
-      "<pre>#{body}</pre>"
-    end
-  end
-
   def template_example input, options
     input = input.gsub(/^ {4}/, '') << "\n" # remove indentation
     template = Ember::Template.new(input, options)
 
     [
-      markdown_pre_block(input),
+      preformatted(input),
 
       if options.empty?
         'The'
@@ -57,10 +49,10 @@ See the API documentation for more information.
       end,
 
       'above template compiles into:',
-      markdown_pre_block(template.program),
+      preformatted(template.program),
 
       'And renders as:',
-      markdown_pre_block(template.render),
+      preformatted(template.render),
 
     ].join("\n")
   end
@@ -188,7 +180,7 @@ Omit `<%% end %>` directives from the template:
 
 When `doc/example.txt` contains:
 
-%= markdown_pre_block File.read('doc/example.txt')
+%= preformatted File.read('doc/example.txt')
 
 And the eRuby template is:
 
@@ -209,7 +201,7 @@ And the eRuby template is:
 
 When `doc/example.erb` contains:
 
-%= markdown_pre_block File.read('doc/example.erb')
+%= preformatted File.read('doc/example.erb')
 
 And the eRuby template is:
 

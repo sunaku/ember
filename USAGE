@@ -17,25 +17,25 @@ given, then the standard input stream (STDIN) is evaluated instead.
 %#----------------------------------------------------------------------------
 
 * `-s`, `--shorthand`:
-    Treat lines beginning with zero or more whitespace
-    followed by the "%" character as eRuby directives.
+  Treat lines beginning with zero or more whitespace
+  followed by the "%" character as eRuby directives.
 
 * `-i`, `--infer_end`:
-    Add missing `<%% end %>` directives based on indentation.
+  Add missing `<%% end %>` directives based on indentation.
 
 * `-u`, `--unindent`:
-    Unindent the bodies of directives that define a
-    Ruby block (do ... end) or scope (begin ... end).
+  Unindent the bodies of directives that define a
+  Ruby block (do ... end) or scope (begin ... end).
 
 * `-c`, `--compile`:
-    Print underlying Ruby program compiled
-    from the input eRuby template and exit.
+  Print underlying Ruby program compiled
+  from the input eRuby template and exit.
 
 * `-h`, `--help`:
-    Print this message and exit.
+  Display this manual and exit.
 
 * `-v`, `--version`:
-    Print version number and exit.
+  Print version number and exit.
 
 %#----------------------------------------------------------------------------
 ## SYNTAX
