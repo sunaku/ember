@@ -61,24 +61,14 @@ module Ember
       @compile
     end
 
-    @@contexts = {}
-
     ##
     # Returns the result of executing the Ruby program for this template
     # (provided by the {#program} method) inside the given context binding.
     #
-    def render context = nil, parent_context_id = nil
-      context ||=
-        @@contexts[parent_context_id] ||        # inherit parent context
-        Object.new.instance_eval('binding')     # create new context
-      @@contexts[@render_context_id] = context  # provide to children
-
-      result = eval @compile, context,
+    def render context = Object.new.instance_eval('binding')
+      eval @compile, context,
         (@options[:source_file] || :SOURCE).to_s,
         (@options[:source_line] || 1).to_i
-
-      @@contexts.delete @render_context_id      # free the memory
-      result
     end
 
     class << self
@@ -431,7 +421,7 @@ module Ember
         nest_template_with = lambda do |meth|
           @program.emit_code "#{template_class_name}.#{meth}(#{
             nested_template_args
-          }.merge!(:continue_result => true)).render(nil, #{@render_context_id.inspect})"
+          }.merge!(:continue_result => true)).render(::Kernel.binding)"
         end
 
         case operation
