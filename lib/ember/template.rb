@@ -149,6 +149,24 @@ module Ember
         end
       end
 
+      ##
+      # Passes the given content block's content (obtained by invoking
+      # the given content block with the given arguments) as an argument
+      # to given wrapper block.  The result of the wrapper block is (1)
+      # appended to the template evaluation result buffer associated with
+      # the given content block and is (2) returned by this method.
+      #
+      def wrap_content_block content_block, *content_block_args, &wrapper
+        raise ArgumentError, 'wrapper block must be given' unless wrapper
+
+        buffer = buffer_from_block(content_block)
+        content = content_from_block(content_block, *content_block_args)
+
+        wrapped_content = wrapper.call(content)
+        buffer << wrapped_content
+        wrapped_content
+      end
+
       private
 
       def resolve_path path, options = {}
