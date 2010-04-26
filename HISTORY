@@ -5,6 +5,27 @@
 This section contains release notes of current and past releases.
 
 %#----------------------------------------------------------------------------
+### Version 0.2.0 (2010-04-25)
+%#----------------------------------------------------------------------------
+
+This release adds [Ruby on Rails] integration.
+
+New features:
+
+  * Ember can now be used directly as a [Ruby on Rails] (2.3 or newer) plugin.
+    The plugin registers Ember as the default Rails template handler for "erb"
+    and "rhtml" file types.  Ember processing options can be set in the Rails
+    environment file:
+
+        ActionView::TemplateHandlers::Ember.options = {
+          :unindent => true,
+          :shorthand => true,
+          :infer_end => true
+        }
+
+    This feature was contributed by Kamil Kukura.
+
+%#----------------------------------------------------------------------------
 ### Version 0.1.1 (2010-04-20)
 %#----------------------------------------------------------------------------
 
