@@ -121,6 +121,21 @@ See the API documentation for more information.
   %= shorthand    ' end'
 
 %#----------------------------------------------------------------------------
+### Unindent block content
+%#----------------------------------------------------------------------------
+
+%|example :shorthand => true, :unindent => true
+  %= standard     ' [1].each do |i|'
+    %= standard   '= i'
+      %= shorthand    ' [2].each do |j|'
+        %= shorthand  '= j'
+                %= shorthand    '|[3].each |k|'
+                     %= shorthand  '= k'
+                %= shorthand    ' end'
+      %= shorthand    ' end'
+  %= standard     ' end'
+
+%#----------------------------------------------------------------------------
 ### Infer block endings
 %#----------------------------------------------------------------------------
 
