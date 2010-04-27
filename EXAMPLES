@@ -136,6 +136,87 @@ See the API documentation for more information.
   %= standard     ' end'
 
 %#----------------------------------------------------------------------------
+### Wrap block content
+%#----------------------------------------------------------------------------
+
+In this manner, you can create domain specific languages in eRuby.
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      Ember::Template.wrap_content_block(block, rand(10)) do |content|
+        "And now I would like to introduce #{subject}:\n\n#{content.join}"
+      end
+    end
+
+    def coin_toss(pronoun, &block)
+      Ember::Template.wrap_content_block(block) do |content|
+        "#{pronoun} favorite side of a coin toss is #{content.join}."
+      end
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+
+    %= shorthand ' coin_toss("His") { number % 2 == 0 ? "heads" : "tails" }'
+  %= shorthand ' end'
+
+%#----------------------------------------------------------------------------
+### Capture block content
+%#----------------------------------------------------------------------------
+
+In this manner, you can create domain specific languages in eRuby.
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      content = Ember::Template.content_from_block(block, rand(2))
+
+      buffer = Ember::Template.buffer_from_block(block)
+      buffer << "introducing(#{subject.inspect}):\n\n#{content.join}"
+    end
+
+    def coin_toss(pronoun, &block)
+      content = Ember::Template.content_from_block(block)
+
+      buffer = Ember::Template.buffer_from_block(block)
+      buffer << "coin_toss(#{pronoun.inspect}): #{content.join}"
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+
+    %= shorthand ' coin_toss("His") { number % 2 == 0 ? "heads" : "tails" }'
+  %= shorthand ' end'
+
+%#----------------------------------------------------------------------------
+### Template evaluation result buffer
+%#----------------------------------------------------------------------------
+
+In this manner, you can create domain specific languages in eRuby.
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      buffer = Ember::Template.buffer_from_block(block)
+      #
+      # you can do whatever you want with buffer,
+      # now that you have a reference to it! >:-)
+      #
+      buffer << "introducing(#{subject.inspect})"
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+  %= shorthand ' end'
+
+%#----------------------------------------------------------------------------
 ### Infer block endings
 %#----------------------------------------------------------------------------
 
