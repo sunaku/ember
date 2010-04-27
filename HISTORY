@@ -5,6 +5,36 @@
 This section contains release notes of current and past releases.
 
 %#----------------------------------------------------------------------------
+### Version 0.3.0 (2010-04-26)
+%#----------------------------------------------------------------------------
+
+This release adds *class methods* that let you (portably and more easily)
+create your own domain specific languages in eRuby; adds more usage
+**EXAMPLES** in the help manual; and removes a binding inheritance hack.
+
+New features:
+
+  * `Ember::Template::wrap_content_block()`:
+    Wraps eRuby block content appending.
+
+  * `Ember::Template::content_from_block()`:
+    Extracts content from eRuby blocks.
+
+  * `Ember::Template::buffer_from_block()`:
+    Gives access to template evalutaion result buffer.
+
+Bug fixes:
+
+  * Remove hack for inheriting parent template binding.
+
+Housekeeping:
+
+  * Add example on unindenting node content and eRuby DSL examples that use
+    the new content block methods.
+
+  * Simplify code examples using the new wrap_content_block() method.
+
+%#----------------------------------------------------------------------------
 ### Version 0.2.0 (2010-04-25)
 %#----------------------------------------------------------------------------
 
