@@ -1,7 +1,3 @@
-%#----------------------------------------------------------------------------
-## ABOUT
-%#----------------------------------------------------------------------------
-
 Ember (*EMBE*dded *R*uby) is an [eRuby template] processor that allows
 debugging, reduces markup, and improves composability of eRuby templates.
 
