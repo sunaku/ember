@@ -161,7 +161,7 @@ module Ember
 
       def resolve_path path, options = {}
         unless Pathname.new(path).absolute?
-          if base = options[:source_file] and File.exist? base
+          if base = options[:source_file] and File.exist? base.to_s
             # target is relative to the file in
             # which the include directive exists
             path = File.join(File.dirname(base), path)
