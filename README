@@ -15,27 +15,27 @@ debugging, reduces markup, and improves composability of eRuby templates.
 
 * Can unindent eRuby block bodies hierarchically.
 
-* Written in <%= `sloccount lib/ember/template.rb`[/^\d+/] %> lines of pure
-  Ruby.
+* Implemented in <%= `sloccount lib/ember/template.rb`[/^\d+/] %> lines of
+  pure Ruby.
 
 %#----------------------------------------------------------------------------
 ### Resources
 %#----------------------------------------------------------------------------
 
 * Issue tracker (report bugs, request features, get help):
-  <http://github.com/sunaku/ember/issues>
+  <<%= bug_track_url %>>
 
-* Source code (browse online or obtain with [Git](http://git-scm.com)):
-  <http://github.com/sunaku/ember>
+* Source code (browse online or obtain with <%= code_repo_scm %>):
+  <<%= code_repo_url %>>
 
 * API documentation:
-  <<%= File.join(Ember::WEBSITE, 'api/') %>>
+  <<%= api_docs_url %>>
 
 * Announcements feed:
-  <<%= File.join(Ember::WEBSITE, 'ann.xml') %>>
+  <<%= ann_feed_url %>>
 
 * Official website:
-  <<%= Ember::WEBSITE %>>
+  <<%= proj_home_url %>>
 
 %#----------------------------------------------------------------------------
 ### Setup
