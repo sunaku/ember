@@ -1,6 +1,3 @@
-require 'combinatorics'
-
 require 'ember/inochi'
-require 'dfect'
-require 'dfect/mini'
-require 'dfect/auto'
+require 'detest/auto'
+require 'detest/mini'

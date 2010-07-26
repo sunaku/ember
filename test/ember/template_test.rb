@@ -1,6 +1,7 @@
 require 'ember/template'
+require 'combinatorics'
 
-describe do
+describe Ember::Template do
   BLANK      = [''] # the empty string
   NEWLINES   = ["\n", "\r\n"]
   SPACES     = [' ', "\t"]
