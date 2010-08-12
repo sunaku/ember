@@ -1,38 +1,270 @@
-%#----------------------------------------------------------------------------
-## SYNOPSIS
-%#----------------------------------------------------------------------------
+== USAGE
 
-`ember` [<OPTIONS>] [<FILE>]
+Begin by loading the Ember library into your program:
 
-%#----------------------------------------------------------------------------
-## DESCRIPTION
-%#----------------------------------------------------------------------------
+[source,ruby]
+------------------------------------------------------------------------------
+require 'rubygems' # might not be necessary; see HACKING
+require 'ember'
+------------------------------------------------------------------------------
 
-Evaluates eRuby directives (see **SYNTAX** below) in the given <FILE> and
-writes the result to the standard output stream (STDOUT).  If <FILE> is not
-given, then the standard input stream (STDIN) is evaluated instead.
+Instantiate an Ember template processor:
 
-%#----------------------------------------------------------------------------
-## OPTIONS
-%#----------------------------------------------------------------------------
+[source,ruby]
+------------------------------------------------------------------------------
+source   = "your eRuby template here"
+options  = {} # see API documentation
+template = Ember::Template.new(source, options)
+------------------------------------------------------------------------------
 
-* `-s`, `--shorthand`:
-  Treat lines beginning with zero or more whitespace
-  followed by the "%" character as eRuby directives.
+Inspect the Ruby program that was compiled (and is used) by the Ember
+template processor to evaluate the eRuby template given as input:
 
-* `-i`, `--infer_end`:
-  Add missing `<%% end %>` directives based on indentation.
+[source,ruby]
+------------------------------------------------------------------------------
+puts template.program
+------------------------------------------------------------------------------
 
-* `-u`, `--unindent`:
-  Unindent the bodies of directives that define a
-  Ruby block (do ... end) or scope (begin ... end).
+View the result of evaluating the eRuby template:
 
-* `-c`, `--compile`:
-  Print underlying Ruby program compiled
-  from the input eRuby template and exit.
+[source,ruby]
+------------------------------------------------------------------------------
+puts template.render
+------------------------------------------------------------------------------
 
-* `-h`, `--help`:
-  Display this manual and exit.
+See the <%= @api_docs_url %>[API documentation] for more information.
 
-* `-v`, `--version`:
-  Print version number and exit.
+<%
+  def standard body
+    '<' + '%' + body + ' %' + '>'
+  end
+
+  def shorthand body
+    '%' + body
+  end
+
+  def example options = {}, &block
+    Ember::Template.wrap_content_block(block) do |block_content|
+      input = block_content.join
+      template = Ember::Template.new(input, options)
+      [
+        '[source,rhtml]',
+        '-------------------------------------------------------------------',
+        input,
+        '-------------------------------------------------------------------',
+        nil,
+
+        "#{
+          if options.empty?
+            'The'
+          else
+            "With `#{options.inspect}` options, the"
+          end
+        } above template compiles into the following Ruby program:", nil,
+
+        '[source,ruby]',
+        '-------------------------------------------------------------------',
+        template.program,
+        '-------------------------------------------------------------------',
+        nil,
+
+        'Which then produces the following output when rendered:', nil,
+
+        '-------------------------------------------------------------------',
+        template.render,
+        '-------------------------------------------------------------------',
+        nil,
+      ].join("\n")
+    end
+  end
+%>
+
+=== An empty template
+
+% example {}
+
+=== Comment directives
+
+%|example :shorthand => true
+  %= standard  '# this is a comment'
+  %= shorthand '# this is also a comment'
+  %= standard  "# this\nis\n\ta\nmulti-line comment"
+
+=== Escaped directives
+
+%|example :shorthand => true
+  %= standard  '% this is an escaped directive'
+  %= shorthand '% this is an escaped directive'
+
+=== Vocal directives
+
+%|example :shorthand => true
+  %= standard   '= "hello"'
+  %= shorthand  '= "world"'
+
+=== Silent directives
+
+%|example :shorthand => true
+  %= standard   ' a = "hello"'
+  %= shorthand  ' b = "world"'
+
+  %= standard   '= a'
+  %= shorthand  '= b'
+
+=== Block directives
+
+%|example :shorthand => true
+  %= shorthand    ' words = %w[hello world]'
+
+  %= standard     ' words.each do |w|'
+    %= standard   '= w'
+  %= standard     ' end'
+
+  %= shorthand    ' words.each do |w|'
+    %= shorthand  '= w'
+  %= shorthand    ' end'
+
+  %= shorthand    '|words.each |w|'
+    %= shorthand  '= w'
+  %= shorthand    ' end'
+
+=== Unindent block content
+
+%|example :shorthand => true, :unindent => true
+  %= standard     ' [1].each do |i|'
+    %= standard   '= i'
+      %= shorthand    ' [2].each do |j|'
+        %= shorthand  '= j'
+                %= shorthand    '|[3].each |k|'
+                     %= shorthand  '= k'
+                %= shorthand    ' end'
+      %= shorthand    ' end'
+  %= standard     ' end'
+
+=== Wrap block content
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      Ember::Template.wrap_content_block(block, rand(10)) do |content|
+        "And now I would like to introduce #{subject}:\n\n#{content.join}"
+      end
+    end
+
+    def coin_toss(pronoun, &block)
+      Ember::Template.wrap_content_block(block) do |content|
+        "#{pronoun} favorite side of a coin toss is #{content.join}."
+      end
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+
+    %= shorthand ' coin_toss("His") { number % 2 == 0 ? "heads" : "tails" }'
+  %= shorthand ' end'
+
+=== Capture block content
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      content = Ember::Template.content_from_block(block, rand(2))
+
+      buffer = Ember::Template.buffer_from_block(block)
+      buffer << "introducing(#{subject.inspect}):\n\n#{content.join}"
+    end
+
+    def coin_toss(pronoun, &block)
+      content = Ember::Template.content_from_block(block)
+
+      buffer = Ember::Template.buffer_from_block(block)
+      buffer << "coin_toss(#{pronoun.inspect}): #{content.join}"
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+
+    %= shorthand ' coin_toss("His") { number % 2 == 0 ? "heads" : "tails" }'
+  %= shorthand ' end'
+
+=== Template evaluation result buffer
+
+%|example :shorthand => true, :unindent => true
+  <%= standard %q{
+    def introducing(subject, &block)
+      buffer = Ember::Template.buffer_from_block(block)
+      #
+      # you can do whatever you want with buffer,
+      # now that you have a reference to it! >:-)
+      #
+      buffer << "introducing(#{subject.inspect})"
+    end
+  } %>
+
+  %= shorthand ' introducing "Matz" do |number|'
+    Father of the Ruby programming language,
+    and also a jolly and well mannered fellow.
+  %= shorthand ' end'
+
+=== Infer block endings
+
+Omit `<%% end %>` directives from the template:
+
+%|example :shorthand => true, :infer_end => true
+  %= shorthand    ' words = %w[hello world]'
+
+  %= standard     ' words.each do |w|'
+    %= standard   '= w'
+
+  %= shorthand    ' words.each do |w|'
+    %= shorthand  '= w'
+
+  %= shorthand    '|words.each |w|'
+    %= shorthand  '= w'
+
+=== Raw file inclusion
+
+% file = 'doc/example.txt'
+
+When `<%= file %>` contains:
+
+------------------------------------------------------------------------------
+%< file
+------------------------------------------------------------------------------
+
+And the eRuby template is:
+
+%|example :shorthand => true, :source_file => __FILE__
+  %= standard  "< #{file.inspect}"
+
+  %= shorthand "< #{file.inspect}"
+
+=== Template file inclusion
+
+% file = 'doc/example.erb'
+
+When `<%= file %>` contains:
+
+------------------------------------------------------------------------------
+%< file
+------------------------------------------------------------------------------
+
+And the eRuby template is:
+
+%|example :shorthand => true, :source_file => __FILE__
+  %= standard  "+ #{file.inspect}"
+
+  %= shorthand "+ #{file.inspect}"
+
+=== Dynamic template evaluation
+
+% template = %{~ "#{shorthand '= 2 + 2'}"}
+
+%|example :shorthand => true
+  %= standard  template
+
+  %= shorthand template

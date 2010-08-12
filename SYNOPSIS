@@ -1,0 +1,32 @@
+== SYNOPSIS
+
+*ember* ['OPTIONS'] ['FILE']
+
+=== Command
+
+Evaluates eRuby directives (see <<SYNTAX>> below) in the given 'FILE' and
+writes the result to the standard output stream.  If 'FILE' is not given, then
+the standard input stream is read and evaluated instead.
+
+=== Options
+
+*-s*, *--shorthand*::
+  Treat lines beginning with zero or more whitespace
+  followed by the "%" character as eRuby directives.
+
+*-i*, *--infer_end*::
+  Add missing "<%% end %>" directives based on indentation.
+
+*-u*, *--unindent*::
+  Unindent the bodies of directives that define a
+  Ruby block (do ... end) or scope (begin ... end).
+
+*-c*, *--compile*::
+  Print underlying Ruby program compiled
+  from the input eRuby template and exit.
+
+*-h*, *--help*::
+  Display this manual and exit.
+
+*-v*, *--version*::
+  Print version number and exit.

@@ -1,14 +1,13 @@
-%#----------------------------------------------------------------------------
-## SEE ALSO
-%#----------------------------------------------------------------------------
+== SEE ALSO
 
 erb(1)
 
-%#----------------------------------------------------------------------------
-%# Markdown link references
-%#----------------------------------------------------------------------------
+[sect2]
+=== References
 
-[Inochi]: <%= Inochi::WEBSITE %>
-[RubyGems]: http://rubygems.org
-[Ruby]: http://ruby-lang.org
-[Ruby on Rails]: http://rubyonrails.org
+[horizontal]
+[[[eRuby]]]:: http://ruby-doc.org/docs/ProgrammingRuby/html/web.html#S2
+[[[Inochi]]]:: <%= Inochi::WEBSITE %>
+[[[Rails]]]:: http://rubyonrails.org
+[[[RubyGems]]]:: http://rubygems.org
+[[[Ruby]]]:: http://ruby-lang.org

@@ -1,11 +1,9 @@
-Ember (*EMBE*dded *R*uby) is an [eRuby template] processor that allows
+== DESCRIPTION
+
+Ember (**EMBE**dded **R**uby) is an <<eRuby>> template processor that allows
 debugging, reduces markup, and improves composability of eRuby templates.
 
-[eRuby template]: http://en.wikipedia.org/wiki/ERuby
-
-%#----------------------------------------------------------------------------
-### Features
-%#----------------------------------------------------------------------------
+=== Features
 
 * Reports correct line numbers in error message stack traces.
 
@@ -18,47 +16,19 @@ debugging, reduces markup, and improves composability of eRuby templates.
 * Implemented in <%= `sloccount lib/ember/template.rb`[/^\d+/] %> lines of
   pure Ruby.
 
-%#----------------------------------------------------------------------------
-### Resources
-%#----------------------------------------------------------------------------
+=== Resources
 
-* Issue tracker (report bugs, request features, get help):
-  <<%= bug_track_url %>>
+Project website::
+<%= @proj_home_url = Ember::WEBSITE %>
 
-* Source code (browse online or obtain with <%= code_repo_scm %>):
-  <<%= code_repo_url %>>
+Announcements feed::
+<%= @ann_feed_url = File.join(@proj_home_url, 'ann.xml') %>
 
-* API documentation:
-  <<%= api_docs_url %>>
+API documentation::
+<%= @api_docs_url = File.join(@proj_home_url, 'api/') %>
 
-* Announcements feed:
-  <<%= ann_feed_url %>>
+Source code (browse online, download, or checkout)::
+<%= @code_repo_url = 'http://github.com/sunaku/ember' %>
 
-* Official website:
-  <<%= proj_home_url %>>
-
-%#----------------------------------------------------------------------------
-### Setup
-%#----------------------------------------------------------------------------
-
-Prerequisites:
-
-  * [Ruby] 1.8.6 or newer.
-
-  * [RubyGems] 1.3.6 or newer.
-
-Installing:
-
-    gem install ember
-
-Installing as a [Ruby on Rails] plugin:
-
-    script/plugin install git://github.com/sunaku/ember.git
-
-Upgrading:
-
-    gem update ember
-
-Removing:
-
-    gem uninstall ember
+Issue tracker (report bugs, request features, get help)::
+<%= @bug_track_url = File.join(@code_repo_url, 'issues') %>
