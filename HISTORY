@@ -1,5 +1,21 @@
 == HISTORY
 
+=== Version 0.3.1 (2011-04-22)
+
+This release fixes a compatibility issue with Ruby 1.9.2-rc2.
+
+.Bug fixes
+
+* Compatibility fixes for Ruby 1.9.2-rc2.
+
+.Housekeeping
+
+* Upgrade to Inochi 6.0.2.
+
+* Upgrade from Dfect 2 to Detest 3.1.0.
+
+* Move SYNTAX section into separate source file.
+
 === Version 0.3.0 (2010-04-26)
 
 This release adds class methods that let you (portably and more easily)

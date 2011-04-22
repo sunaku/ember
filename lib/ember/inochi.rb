@@ -3,27 +3,27 @@ module Ember
   ##
   # Official name of this project.
   #
-  PROJECT = "Ember"
+  PROJECT = 'Ember'
 
   ##
   # Short single-line description of this project.
   #
-  TAGLINE = "eRuby template processor"
+  TAGLINE = 'eRuby template processor'
 
   ##
   # Address of this project's official home page.
   #
-  WEBSITE = "http://snk.tuxfamily.org/lib/ember/"
+  WEBSITE = 'http://snk.tuxfamily.org/lib/ember/'
 
   ##
   # Number of this release of this project.
   #
-  VERSION = "0.3.0"
+  VERSION = '0.3.1'
 
   ##
   # Date of this release of this project.
   #
-  RELDATE = "2010-04-26"
+  RELDATE = '2011-04-22'
 
   ##
   # Description of this release of this project.
