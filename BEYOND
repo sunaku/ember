@@ -6,6 +6,7 @@ erb(1)
 === References
 
 [horizontal]
+[[[Bundler]]]:: http://gembundler.com
 [[[eRuby]]]:: http://ruby-doc.org/docs/ProgrammingRuby/html/web.html#S2
 [[[Inochi]]]:: <%= Inochi::WEBSITE %>
 [[[Rails]]]:: http://rubyonrails.org
